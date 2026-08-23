@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="AI-powered Equity Trading Chat - Your personalized morning trading assistant with smart task management and stock screening." />
-  <title>Equity Trading Chat | AI Screener</title>
+  <meta name="description" content="Interactive Design System & UX Architecture AI Tutor - Master interaction patterns, information hierarchy, modals, tabs, and micro-animations with real-time generative feedback." />
+  <title>Interaction & Design System AI Tutor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -16,26 +16,28 @@
     <!-- ═══════ TOP BAR ═══════ -->
     <header class="topbar" id="topbar">
       <div class="topbar__left">
-        <div class="topbar__logo" id="logo">
+        <div class="topbar__logo" id="logo" title="Design System AI Engine">
           <svg width="28" height="24" viewBox="0 0 28 24" fill="none">
             <rect x="2" y="4" width="8" height="16" rx="2" fill="#4CAF50"/>
             <rect x="12" y="8" width="6" height="12" rx="2" fill="#66BB6A"/>
             <rect x="20" y="2" width="6" height="18" rx="2" fill="#81C784"/>
           </svg>
         </div>
-        <button class="topbar__icon-btn" id="menu-btn" aria-label="Menu">
+        <button class="topbar__icon-btn" id="menu-btn" aria-label="Open sidebar" title="Chat History & Topics">
           <span class="material-symbols-outlined">menu</span>
         </button>
-        <button class="topbar__icon-btn" id="new-chat-btn" aria-label="New chat">
+        <button class="topbar__icon-btn" id="new-chat-btn" aria-label="New design session" title="New Learning Session">
           <span class="material-symbols-outlined">add</span>
         </button>
-        <span class="topbar__title" id="chat-title">Equity trading Chat</span>
+        <span class="topbar__title" id="chat-title">Interaction & Design System AI</span>
       </div>
       <span class="topbar__status" id="status-label">Prompting</span>
       <div class="topbar__right">
         <span class="topbar__time" id="current-time">07:00 AM</span>
-        <span class="material-symbols-outlined topbar__star" id="star-btn">kid_star</span>
-        <button class="topbar__icon-btn" id="more-btn" aria-label="More options">
+        <button class="topbar__icon-btn topbar__star" id="settings-trigger-btn" aria-label="AI Engine Settings" title="AI Provider & Unlimited Tokens Settings">
+          <span class="material-symbols-outlined">kid_star</span>
+        </button>
+        <button class="topbar__icon-btn" id="more-btn" aria-label="More options" title="Page Options">
           <span class="material-symbols-outlined">more_horiz</span>
         </button>
       </div>
@@ -62,10 +64,10 @@
 
       <!-- Tabs -->
       <div class="sidebar__tabs">
-        <button class="sidebar__tab sidebar__tab--active" id="tab-all-chats">All Chats</button>
+        <button class="sidebar__tab sidebar__tab--active" id="tab-all-chats">All Modules</button>
         <button class="sidebar__tab" id="tab-favorites">
           <span class="material-symbols-outlined sidebar__tab-icon">kid_star</span>
-          <span>Favorites</span>
+          <span>Starred</span>
         </button>
       </div>
 
@@ -73,7 +75,7 @@
       <div class="sidebar__action-row">
         <button class="sidebar__action-btn" id="sidebar-new-chat">
           <span class="material-symbols-outlined">add</span>
-          <span>New chat</span>
+          <span>New design challenge</span>
         </button>
       </div>
 
@@ -81,85 +83,85 @@
       <div class="sidebar__action-row">
         <button class="sidebar__action-btn" id="sidebar-search">
           <span class="material-symbols-outlined">search</span>
-          <span>Search chats</span>
+          <span>Search UX patterns</span>
         </button>
       </div>
 
-      <!-- Chat History -->
+      <!-- Chat History / Modules -->
       <div class="sidebar__history" id="sidebar-history">
         <div class="sidebar__history-section">
           <div class="sidebar__section-header">
             <span class="material-symbols-outlined sidebar__section-icon">expand_more</span>
-            <span class="sidebar__section-title">Today</span>
+            <span class="sidebar__section-title">Design Challenges</span>
           </div>
 
-          <button class="sidebar__chat-item" id="chat-item-1">
+          <button class="sidebar__chat-item" data-prompt="Quiz me on when to use Modals vs Drawers vs Popovers in web apps">
             <div class="sidebar__chat-icon">
-              <span class="material-symbols-outlined">chat_bubble_outline</span>
+              <span class="material-symbols-outlined">quiz</span>
             </div>
             <div class="sidebar__chat-info">
-              <span class="sidebar__chat-title">Show me top profitable companies</span>
+              <span class="sidebar__chat-title">Modals vs Drawers vs Popovers</span>
               <div class="sidebar__chat-meta">
-                <span class="sidebar__chat-date">Jan 11, 11:16 PM</span>
+                <span class="sidebar__chat-date">Interaction Quiz</span>
                 <span class="sidebar__chat-sep">·</span>
-                <span class="sidebar__chat-model">Screener</span>
+                <span class="sidebar__chat-model">UX Master</span>
               </div>
             </div>
           </button>
 
-          <button class="sidebar__chat-item" id="chat-item-2">
+          <button class="sidebar__chat-item" data-prompt="Give me a 4-level information hierarchy challenge: Tab -> Filters -> Folders -> Files">
             <div class="sidebar__chat-icon">
-              <span class="material-symbols-outlined">chat_bubble_outline</span>
+              <span class="material-symbols-outlined">account_tree</span>
             </div>
             <div class="sidebar__chat-info">
-              <span class="sidebar__chat-title">Show me top</span>
+              <span class="sidebar__chat-title">Multi-level Hierarchy Builder</span>
               <div class="sidebar__chat-meta">
-                <span class="sidebar__chat-date">Jan 11, 11:15 PM</span>
+                <span class="sidebar__chat-date">Flow Builder</span>
                 <span class="sidebar__chat-sep">·</span>
-                <span class="sidebar__chat-model">Screener</span>
+                <span class="sidebar__chat-model">IA Engine</span>
               </div>
             </div>
           </button>
 
-          <button class="sidebar__chat-item" id="chat-item-3">
+          <button class="sidebar__chat-item" data-prompt="When should I use Tabs vs Segmented Controls vs Accordions?">
             <div class="sidebar__chat-icon">
-              <span class="material-symbols-outlined">chat_bubble_outline</span>
+              <span class="material-symbols-outlined">tab</span>
             </div>
             <div class="sidebar__chat-info">
-              <span class="sidebar__chat-title">Show me top</span>
+              <span class="sidebar__chat-title">Tabs vs Segmented Controls</span>
               <div class="sidebar__chat-meta">
-                <span class="sidebar__chat-date">Jan 11, 11:09 PM</span>
+                <span class="sidebar__chat-date">Design System</span>
                 <span class="sidebar__chat-sep">·</span>
-                <span class="sidebar__chat-model">Screener</span>
+                <span class="sidebar__chat-model">UX Master</span>
               </div>
             </div>
             <span class="material-symbols-outlined sidebar__chat-star">kid_star</span>
           </button>
 
-          <button class="sidebar__chat-item" id="chat-item-4">
+          <button class="sidebar__chat-item" data-prompt="What animation easing curves are best for micro-interactions vs page transitions?">
             <div class="sidebar__chat-icon">
-              <span class="material-symbols-outlined">chat_bubble_outline</span>
+              <span class="material-symbols-outlined">animation</span>
             </div>
             <div class="sidebar__chat-info">
-              <span class="sidebar__chat-title">Which stocks have</span>
+              <span class="sidebar__chat-title">Micro-Animations & Easing Heuristics</span>
               <div class="sidebar__chat-meta">
-                <span class="sidebar__chat-date">Jan 11, 10:58 PM</span>
+                <span class="sidebar__chat-date">Motion Design</span>
                 <span class="sidebar__chat-sep">·</span>
-                <span class="sidebar__chat-model">Screener</span>
+                <span class="sidebar__chat-model">UX Master</span>
               </div>
             </div>
           </button>
 
-          <button class="sidebar__chat-item" id="chat-item-5">
+          <button class="sidebar__chat-item" data-prompt="When to use determinate progress bars vs skeleton loaders vs spinning indicators?">
             <div class="sidebar__chat-icon">
-              <span class="material-symbols-outlined">chat_bubble_outline</span>
+              <span class="material-symbols-outlined">hourglass_top</span>
             </div>
             <div class="sidebar__chat-info">
-              <span class="sidebar__chat-title">Show me top</span>
+              <span class="sidebar__chat-title">Indicators & Perceived Latency</span>
               <div class="sidebar__chat-meta">
-                <span class="sidebar__chat-date">Jan 11, 9:51 PM</span>
+                <span class="sidebar__chat-date">Feedback Patterns</span>
                 <span class="sidebar__chat-sep">·</span>
-                <span class="sidebar__chat-model">Screener</span>
+                <span class="sidebar__chat-model">UX Master</span>
               </div>
             </div>
           </button>
@@ -171,11 +173,11 @@
     <div class="dropdown-menu" id="dropdown-menu" aria-label="Options menu">
       <button class="dropdown-menu__item" id="dropdown-duplicate">
         <span class="material-symbols-outlined">content_copy</span>
-        <span>Duplicate</span>
+        <span>Duplicate session</span>
       </button>
-      <button class="dropdown-menu__item" id="dropdown-theme">
-        <span class="material-symbols-outlined">contrast</span>
-        <span>Theme</span>
+      <button class="dropdown-menu__item" id="dropdown-ai-settings">
+        <span class="material-symbols-outlined">smart_toy</span>
+        <span>AI Engine & API Keys</span>
       </button>
 
       <div class="dropdown-menu__divider"></div>
@@ -192,7 +194,7 @@
       </button>
       <button class="dropdown-menu__item" id="dropdown-customize">
         <span class="material-symbols-outlined">discover_tune</span>
-        <span>Customize page</span>
+        <span>Configure parameters</span>
       </button>
 
       <div class="dropdown-menu__divider"></div>
@@ -208,39 +210,114 @@
       </button>
     </div>
 
+    <!-- ═══════ AI PROVIDER SETTINGS MODAL ═══════ -->
+    <div class="settings-modal" id="settings-modal" aria-hidden="true">
+      <div class="settings-modal__dialog">
+        <div class="settings-modal__header">
+          <div class="settings-modal__title-group">
+            <span class="material-symbols-outlined settings-modal__icon">bolt</span>
+            <h2 class="settings-modal__title">AI Engine & Unlimited Tokens Setup</h2>
+          </div>
+          <button class="settings-modal__close" id="settings-modal-close" aria-label="Close modal">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div class="settings-modal__body">
+          <p class="settings-modal__desc">
+            Choose your AI execution mode. You can use our <strong>Built-in Offline Master Engine</strong> for zero-cost instant answers, or link free API keys for unlimited live reasoning.
+          </p>
+
+          <div class="settings-provider-group">
+            <label class="settings-provider-card settings-provider-card--active" id="card-mode-builtin">
+              <input type="radio" name="ai-engine-mode" value="builtin" checked />
+              <div class="settings-provider-card__content">
+                <div class="settings-provider-card__title-row">
+                  <span class="settings-provider-name">Built-in UX Master Engine</span>
+                  <span class="settings-badge settings-badge--green">Unlimited / Instant / Free</span>
+                </div>
+                <p class="settings-provider-detail">
+                  Zero setup, offline capable. Includes 100+ design system heuristics, interactive flow evaluation, and MCQ generators.
+                </p>
+              </div>
+            </label>
+
+            <label class="settings-provider-card" id="card-mode-gemini">
+              <input type="radio" name="ai-engine-mode" value="gemini" />
+              <div class="settings-provider-card__content">
+                <div class="settings-provider-card__title-row">
+                  <span class="settings-provider-name">Google Gemini 2.0 Flash</span>
+                  <span class="settings-badge">1,500 Free Requests/Day</span>
+                </div>
+                <p class="settings-provider-detail">
+                  Fast live reasoning from Google AI Studio. 1M token window with generous free tier.
+                </p>
+                <div class="settings-key-input-box" id="gemini-key-box" style="display: none;">
+                  <input type="password" id="gemini-api-key" placeholder="Enter Gemini API Key (AIzaSy...)" class="settings-input" />
+                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" class="settings-key-link">Get Free Key ↗</a>
+                </div>
+              </div>
+            </label>
+
+            <label class="settings-provider-card" id="card-mode-groq">
+              <input type="radio" name="ai-engine-mode" value="groq" />
+              <div class="settings-provider-card__content">
+                <div class="settings-provider-card__title-row">
+                  <span class="settings-provider-name">Groq / OpenRouter (Llama 3.3 70B)</span>
+                  <span class="settings-badge">Ultra-Fast Free Tier</span>
+                </div>
+                <p class="settings-provider-detail">
+                  Sub-second streaming token generation on high-speed LPU hardware.
+                </p>
+                <div class="settings-key-input-box" id="groq-key-box" style="display: none;">
+                  <input type="password" id="groq-api-key" placeholder="Enter Groq API Key (gsk_...)" class="settings-input" />
+                  <a href="https://console.groq.com/keys" target="_blank" rel="noopener" class="settings-key-link">Get Free Key ↗</a>
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-modal__footer">
+          <button class="settings-btn settings-btn--secondary" id="settings-cancel-btn">Cancel</button>
+          <button class="settings-btn settings-btn--primary" id="settings-save-btn">Save Engine Preferences</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ═══════ MAIN CONTENT ═══════ -->
     <main class="content" id="main-content">
       <!-- Ambient glow effects -->
       <div class="ambient-glow ambient-glow--left" aria-hidden="true"></div>
       <div class="ambient-glow ambient-glow--right" aria-hidden="true"></div>
 
-      <!-- Tasks Section (Page 1) -->
+      <!-- Tasks / Starter Modules Section (Page 1) -->
       <section class="tasks-section" id="tasks-section">
         <div class="tasks-section__greeting" id="greeting">
           <span class="tasks-section__wave">👋</span>
           <span class="tasks-section__name">Hi Rahul</span>
         </div>
-        <h1 class="tasks-section__heading" id="heading">Your Morning Tasks are here...</h1>
+        <h1 class="tasks-section__heading" id="heading">Your Design System Challenges are here...</h1>
 
         <div class="tasks-list-wrapper" id="tasks-list-wrapper">
           <div class="tasks-list" id="tasks-list">
-            <div class="task-item task-item--completed" id="task-1">
+            <div class="task-item task-item--completed" id="task-1" data-prompt="Quiz me on when to use Modals vs Drawers vs Popovers">
               <div class="task-item__checkbox task-item__checkbox--done">
                 <span class="material-symbols-outlined">check</span>
               </div>
-              <span class="task-item__label">Watch last year's TCS performance</span>
+              <span class="task-item__label">Mastering Modals vs Drawers vs Popovers</span>
             </div>
-            <div class="task-item" id="task-2">
+            <div class="task-item" id="task-2" data-prompt="Give me a 4-level information hierarchy challenge: Tab -> Filters -> Folders -> Files">
               <div class="task-item__checkbox"></div>
-              <span class="task-item__label">Highlight watchlist stocks near entry</span>
+              <span class="task-item__label">Information Architecture: 4-Level Flow Builder</span>
             </div>
-            <div class="task-item" id="task-3">
+            <div class="task-item" id="task-3" data-prompt="When should I use Tabs vs Segmented Controls vs Accordions?">
               <div class="task-item__checkbox"></div>
-              <span class="task-item__label">Identify overall sentiment (bullish / bearish / sideways)</span>
+              <span class="task-item__label">Tabs vs Segmented Controls vs Accordions</span>
             </div>
-            <div class="task-item" id="task-4">
+            <div class="task-item" id="task-4" data-prompt="When to use determinate progress bars vs skeleton loaders vs spinning indicators?">
               <div class="task-item__checkbox"></div>
-              <span class="task-item__label">Check price action of saved stocks</span>
+              <span class="task-item__label">Feedback Indicators: Skeletons vs Spinners</span>
             </div>
           </div>
           <div class="tasks-list__scrollbar" id="scrollbar-track">
@@ -250,21 +327,25 @@
 
         <!-- Suggestions -->
         <div class="suggestions" id="suggestions">
-          <p class="suggestions__title">Suggestion</p>
+          <p class="suggestions__title">Suggested Design Topics</p>
           <div class="suggestions__chips" id="suggestion-chips">
-            <button class="chip" id="chip-evening">
-              <span class="material-symbols-outlined chip__icon">bedtime</span>
-              <span class="chip__label">Evening Tasks</span>
+            <button class="chip" id="chip-hierarchy" data-prompt="Give me a 4-level information hierarchy challenge: Tab -> Filters -> Folders -> Files">
+              <span class="material-symbols-outlined chip__icon">account_tree</span>
+              <span class="chip__label">Hierarchy Flow</span>
             </button>
-            <button class="chip" id="chip-recommendations">
-              <span class="material-symbols-outlined chip__icon">emoji_objects</span>
-              <span class="chip__label">Recommendations</span>
+            <button class="chip" id="chip-modal" data-prompt="Quiz me on when to use Modals vs Drawers vs Popovers">
+              <span class="material-symbols-outlined chip__icon">web_asset</span>
+              <span class="chip__label">Modal vs Drawer</span>
             </button>
-            <button class="chip" id="chip-watchlist">
-              <span class="material-symbols-outlined chip__icon">assignment</span>
-              <span class="chip__label">View Watchlist</span>
+            <button class="chip" id="chip-tabs" data-prompt="When to use Tabs vs Segmented Controls?">
+              <span class="material-symbols-outlined chip__icon">tab</span>
+              <span class="chip__label">Tabs & Switches</span>
             </button>
-            <button class="chip chip--text-only" id="chip-more">
+            <button class="chip" id="chip-animation" data-prompt="What animation easing curves are best for micro-interactions?">
+              <span class="material-symbols-outlined chip__icon">animation</span>
+              <span class="chip__label">Animations</span>
+            </button>
+            <button class="chip chip--text-only" id="chip-more" data-prompt="Give me a comprehensive MCQ test on Design System interaction rules">
               <span class="chip__label">More</span>
             </button>
           </div>
@@ -273,168 +354,9 @@
 
       <!-- ═══════ AI CHAT & ANALYZING VIEW (Page 2 / Page 4) ═══════ -->
       <section class="chat-section" id="chat-section" style="display: none;">
-        <!-- User Prompt Bubble -->
-        <div class="user-message-row" id="user-message-row">
-          <div class="user-message-bubble" id="user-message-text">
-            Show me stocks with ROE above 15%, profit growing at least 10% YoY, PE below 20, and debt-to-equity less than 0.5.
-          </div>
-        </div>
-
-        <!-- AI Analyzing / Behind the Scenes -->
-        <div class="behind-scenes-card" id="behind-scenes-card">
-          <button class="behind-scenes__header" id="behind-scenes-toggle" aria-expanded="true">
-            <span class="material-symbols-outlined behind-scenes__arrow">keyboard_arrow_down</span>
-            <span class="behind-scenes__title">Behind the scenes</span>
-          </button>
-
-          <div class="behind-scenes__content" id="behind-scenes-content">
-            <!-- Step 1 -->
-            <div class="bts-step bts-step--done" id="bts-step-1">
-              <div class="bts-step__indicator">
-                <span class="material-symbols-outlined bts-step__icon">radio_button_checked</span>
-                <div class="bts-step__line"></div>
-              </div>
-              <div class="bts-step__body">
-                <div class="bts-step__text">Analyzing your request</div>
-              </div>
-            </div>
-
-            <!-- Step 2 -->
-            <div class="bts-step bts-step--done" id="bts-step-2">
-              <div class="bts-step__indicator">
-                <span class="material-symbols-outlined bts-step__icon">radio_button_checked</span>
-                <div class="bts-step__line"></div>
-              </div>
-              <div class="bts-step__body">
-                <div class="bts-step__text">Planning execution</div>
-              </div>
-            </div>
-
-            <!-- Step 3: Fetching with Web Sources -->
-            <div class="bts-step bts-step--done" id="bts-step-3">
-              <div class="bts-step__indicator">
-                <span class="material-symbols-outlined bts-step__icon">language</span>
-                <div class="bts-step__line"></div>
-              </div>
-              <div class="bts-step__body">
-                <div class="bts-step__text">[FETCHING] Scanning 1,200+ NSE/BSE tickers for 3-month price peaks...</div>
-                
-                <!-- Web Sources Box -->
-                <div class="bts-sources-box" id="bts-sources">
-                  <div class="bts-source-item">
-                    <div class="bts-source-item__left">
-                      <span class="bts-source-icon">🌐</span>
-                      <span class="bts-source-title">Nifty Healthcare Stocks: A Side-by-Side Comparison for Investors</span>
-                    </div>
-                    <span class="bts-source-domain">www.enrichmoney.in</span>
-                  </div>
-                  <div class="bts-source-item">
-                    <div class="bts-source-item__left">
-                      <span class="bts-source-icon">🌐</span>
-                      <span class="bts-source-title">Nifty Healthcare Stocks: A Side-by-Side Comparison for Investors</span>
-                    </div>
-                    <span class="bts-source-domain">www.enrichmoney.in</span>
-                  </div>
-                  <div class="bts-source-item">
-                    <div class="bts-source-item__left">
-                      <span class="bts-source-icon">🌐</span>
-                      <span class="bts-source-title">Nifty Healthcare Stocks: A Side-by-Side Comparison for Investors</span>
-                    </div>
-                    <span class="bts-source-domain">www.enrichmoney.in</span>
-                  </div>
-                  <div class="bts-source-item">
-                    <div class="bts-source-item__left">
-                      <span class="bts-source-icon">🌐</span>
-                      <span class="bts-source-title">Top performing Nifty stocks surged up to 146% in a year; do you own any? - BusinessToday</span>
-                    </div>
-                    <span class="bts-source-domain">www.enrichmoney.in</span>
-                  </div>
-                  <div class="bts-source-item">
-                    <div class="bts-source-item__left">
-                      <span class="bts-source-icon">🌐</span>
-                      <span class="bts-source-title">Top stocks to invest in India in 2024</span>
-                    </div>
-                    <span class="bts-source-domain">www.enrichmoney.in</span>
-                  </div>
-                </div>
-
-                <div class="bts-step__result">
-                  <span class="material-symbols-outlined bts-check-icon">check</span>
-                  <span>DONE (1,200+ matches found).</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Step 4 -->
-            <div class="bts-step bts-step--done" id="bts-step-4">
-              <div class="bts-step__indicator">
-                <span class="material-symbols-outlined bts-step__icon">pageview</span>
-                <div class="bts-step__line"></div>
-              </div>
-              <div class="bts-step__body">
-                <div class="bts-step__text">[CALCULATING] Running EMA 50/200 cross-reference for matched tickers...</div>
-                <div class="bts-step__result">
-                  <span class="material-symbols-outlined bts-check-icon">check</span>
-                  <span>DONE (142 matches found).</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Step 5 -->
-            <div class="bts-step bts-step--done" id="bts-step-5">
-              <div class="bts-step__indicator">
-                <span class="material-symbols-outlined bts-step__icon">pageview</span>
-                <div class="bts-step__line"></div>
-              </div>
-              <div class="bts-step__body">
-                <div class="bts-step__text">[CALCULATING] Analyzing RSI (Relative Strength Index)...</div>
-                <div class="bts-step__result">
-                  <span class="material-symbols-outlined bts-check-icon">check</span>
-                  <span>DONE (96 stocks shortlisted)</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Step 6 -->
-            <div class="bts-step bts-step--done" id="bts-step-6">
-              <div class="bts-step__indicator">
-                <span class="material-symbols-outlined bts-step__icon">pageview</span>
-                <div class="bts-step__line"></div>
-              </div>
-              <div class="bts-step__body">
-                <div class="bts-step__text">[Calculating] Evaluating Analyzing volume spikes vs 30-day average...</div>
-                <div class="bts-step__result">
-                  <span class="material-symbols-outlined bts-check-icon">check</span>
-                  <span>DONE (64 stocks showing unusual activity)</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Step 7 -->
-            <div class="bts-step bts-step--done" id="bts-step-7">
-              <div class="bts-step__indicator">
-                <span class="material-symbols-outlined bts-step__icon">pageview</span>
-                <div class="bts-step__line"></div>
-              </div>
-              <div class="bts-step__body">
-                <div class="bts-step__text">[Calculating] Evaluating Analyzing volume spikes vs 30-day average...</div>
-                <div class="bts-step__result">
-                  <span class="material-symbols-outlined bts-check-icon">check</span>
-                  <span>DONE (64 stocks showing unusual activity)</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Step 8: Active/Preparing -->
-            <div class="bts-step bts-step--active" id="bts-step-8">
-              <div class="bts-step__indicator">
-                <span class="material-symbols-outlined bts-step__icon bts-step__icon--spinning">progress_activity</span>
-              </div>
-              <div class="bts-step__body">
-                <div class="bts-step__text">Preparing final screener output...</div>
-              </div>
-            </div>
-          </div>
+        <!-- Dynamic message feed rendered here -->
+        <div class="chat-thread" id="chat-thread">
+          <!-- Populated dynamically by app.js with user bubble, behind-the-scenes, MCQs, flow builder, and component sandbox -->
         </div>
       </section>
 
@@ -442,20 +364,20 @@
       <div class="input-bar" id="input-bar">
         <div class="input-bar__glow" aria-hidden="true"></div>
         <div class="input-bar__field-wrapper">
-          <textarea class="input-bar__field" id="screener-input" placeholder="Ask Screener.." rows="1"></textarea>
+          <textarea class="input-bar__field" id="screener-input" placeholder="Ask Design AI... (e.g. 'Quiz me on Modals vs Drawers' or 'Build a 4-level navigation flow')" rows="1"></textarea>
         </div>
         <div class="input-bar__actions">
           <div class="input-bar__actions-left">
-            <button class="input-bar__action-btn" id="attach-btn" aria-label="Attach file">
+            <button class="input-bar__action-btn" id="attach-btn" aria-label="Insert interactive widget" title="Insert Chained Flow Builder">
               <span class="material-symbols-outlined">add</span>
             </button>
-            <button class="input-bar__action-btn input-bar__action-btn--labeled" id="indepth-btn">
+            <button class="input-bar__action-btn input-bar__action-btn--labeled" id="indepth-btn" title="Toggle Deep UX Heuristics Analysis">
               <span class="material-symbols-outlined">drag_handle</span>
-              <span class="input-bar__action-label">In-depth</span>
+              <span class="input-bar__action-label">Deep UX Analysis</span>
             </button>
-            <button class="input-bar__action-btn input-bar__action-btn--labeled" id="toggle-input-btn">
-              <span class="material-symbols-outlined">toggle_off</span>
-              <span class="input-bar__action-label">Take my inputs during process</span>
+            <button class="input-bar__action-btn input-bar__action-btn--labeled" id="toggle-input-btn" title="Interactive Step-by-Step Questioning Mode">
+              <span class="material-symbols-outlined">toggle_on</span>
+              <span class="input-bar__action-label">Interactive Questioning Mode</span>
             </button>
           </div>
           
@@ -463,7 +385,7 @@
             <!-- Progress counter shown during AI processing -->
             <div class="input-bar__progress" id="input-progress" style="display: none;">
               <span class="material-symbols-outlined input-bar__progress-spinner">progress_activity</span>
-              <span class="input-bar__progress-text" id="progress-value">75.56%</span>
+              <span class="input-bar__progress-text" id="progress-value">100%</span>
             </div>
 
             <!-- Action Button: Mic / Send / Stop -->
