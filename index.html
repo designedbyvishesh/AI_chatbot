@@ -89,6 +89,18 @@
 
       <!-- Chat History / Modules -->
       <div class="sidebar__history" id="sidebar-history">
+        <!-- Live User Saved History (Connected to MongoDB) -->
+        <div class="sidebar__history-section" id="user-history-section">
+          <div class="sidebar__section-header">
+            <span class="material-symbols-outlined sidebar__section-icon">history</span>
+            <span class="sidebar__section-title">Your Recent Chats</span>
+          </div>
+          <div class="sidebar__session-list" id="user-session-list">
+            <!-- Dynamically populated from MongoDB and localStorage -->
+          </div>
+        </div>
+
+        <!-- Curated Design Challenges -->
         <div class="sidebar__history-section">
           <div class="sidebar__section-header">
             <span class="material-symbols-outlined sidebar__section-icon">expand_more</span>

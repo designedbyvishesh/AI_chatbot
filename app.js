@@ -2,11 +2,13 @@
    Interaction & Design System AI — Core Engine
    ═══════════════════════════════════════════════ */
 
-// App State
+// App & Session State
 let isProcessing = false;
 let processingIntervals = [];
 let currentQuizIndex = 0;
 let isQuestioningMode = true;
+let activeSessionId = null;
+let allSessions = JSON.parse(localStorage.getItem('design_chat_sessions') || '[]');
 
 // Settings & Provider Configuration
 let aiConfig = {
@@ -28,8 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initDropdownToggles();
   initBehindScenesToggle();
   initNewChatButtons();
-  initChatHistoryClicks();
+  initCuratedChatClicks();
   initSettingsModal();
+  loadSavedSessions();
   checkDatabaseStatus();
 });
 
@@ -51,7 +54,7 @@ function initClock() {
   setInterval(update, 30000);
 }
 
-/* ─── Database Live Health Check ─── */
+/* ─── Database Live Health Check & Session Sync ─── */
 async function checkDatabaseStatus() {
   try {
     const res = await fetch('/api/db-status');
@@ -63,8 +66,111 @@ async function checkDatabaseStatus() {
       }
     }
   } catch (e) {
-    // Running in static mode without local node server
+    // Local / offline fallback
   }
+}
+
+/* ─── Load Saved Sessions from MongoDB / LocalStorage ─── */
+async function loadSavedSessions() {
+  try {
+    const res = await fetch('/api/sessions');
+    const data = await res.json();
+    if (data.success && Array.isArray(data.sessions) && data.sessions.length > 0) {
+      // Merge MongoDB sessions with local sessions
+      const mongoIds = new Set(data.sessions.map(s => s.id || s._id));
+      const filteredLocal = allSessions.filter(s => !mongoIds.has(s.id));
+      allSessions = [...data.sessions, ...filteredLocal];
+      localStorage.setItem('design_chat_sessions', JSON.stringify(allSessions));
+    }
+  } catch (e) {
+    // Use localStorage
+  }
+  renderSessionList();
+}
+
+/* ─── Render Live Chat History in Sidebar ─── */
+function renderSessionList() {
+  const container = document.getElementById('user-session-list');
+  if (!container) return;
+
+  if (allSessions.length === 0) {
+    container.innerHTML = `
+      <div class="sidebar__empty-history">
+        No recent chats yet. Type a prompt or click New Chat!
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = '';
+  allSessions.forEach(session => {
+    const item = document.createElement('div');
+    const isActive = session.id === activeSessionId;
+    item.className = `sidebar__chat-item ${isActive ? 'sidebar__chat-item--active' : ''}`;
+    
+    const timeAgo = formatTimeAgo(session.timestamp);
+    const displayTitle = escapeHtml(session.title || session.prompt || 'Design Session');
+    const modelBadge = session.model || 'UX Master';
+
+    item.innerHTML = `
+      <div class="sidebar__chat-icon">
+        <span class="material-symbols-outlined">chat_bubble</span>
+      </div>
+      <div class="sidebar__chat-info">
+        <span class="sidebar__chat-title">${displayTitle}</span>
+        <div class="sidebar__chat-meta">
+          <span class="sidebar__chat-date">${timeAgo}</span>
+          <span class="sidebar__chat-sep">·</span>
+          <span class="sidebar__chat-model">${modelBadge}</span>
+        </div>
+      </div>
+      <button class="sidebar__chat-delete-btn" onclick="deleteSession(event, '${session.id}')" title="Delete chat">
+        <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
+      </button>
+    `;
+
+    item.addEventListener('click', () => {
+      openSession(session);
+    });
+
+    container.appendChild(item);
+  });
+}
+
+function openSession(session) {
+  activeSessionId = session.id;
+  renderSessionList();
+  sendPrompt(session.prompt || session.title, false);
+  if (window._closeSidebar) window._closeSidebar();
+}
+
+window.deleteSession = function(e, sessionId) {
+  e.stopPropagation();
+  allSessions = allSessions.filter(s => s.id !== sessionId && s._id !== sessionId);
+  localStorage.setItem('design_chat_sessions', JSON.stringify(allSessions));
+  
+  if (activeSessionId === sessionId) {
+    activeSessionId = null;
+    resetToMorningTasks();
+  }
+  renderSessionList();
+};
+
+function formatTimeAgo(isoString) {
+  if (!isoString) return 'Recent';
+  const diff = Date.now() - new Date(isoString).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+function getActiveModelName() {
+  if (aiConfig.mode === 'gemini') return 'Gemini 2.0';
+  if (aiConfig.mode === 'groq') return 'Groq LPU';
+  return 'UX Master';
 }
 
 /* ─── Starter Task Items Interaction ─── */
@@ -201,11 +307,35 @@ function initInputBarActionButtons() {
 /* ═══════════════════════════════════════════════
    CORE DISPATCHER & AI PROCESSING PIPELINE
    ═══════════════════════════════════════════════ */
-function sendPrompt(promptText) {
+function sendPrompt(promptText, createNewSession = true) {
   if (isProcessing) return;
   isProcessing = true;
 
-  // 1. Switch View to Chat Mode
+  // 1. Manage Active Session
+  if (createNewSession || !activeSessionId) {
+    activeSessionId = 'session_' + Date.now();
+    const newSession = {
+      id: activeSessionId,
+      title: promptText.length > 34 ? promptText.substring(0, 34) + '...' : promptText,
+      prompt: promptText,
+      timestamp: new Date().toISOString(),
+      model: getActiveModelName()
+    };
+    allSessions.unshift(newSession);
+    localStorage.setItem('design_chat_sessions', JSON.stringify(allSessions));
+    renderSessionList();
+
+    // Save to MongoDB Atlas
+    try {
+      fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSession)
+      });
+    } catch (e) {}
+  }
+
+  // 2. Switch View to Chat Mode
   const tasksSection = document.getElementById('tasks-section');
   const chatSection = document.getElementById('chat-section');
   const chatThread = document.getElementById('chat-thread');
@@ -220,7 +350,7 @@ function sendPrompt(promptText) {
   if (content) content.classList.add('chat-mode');
   if (statusLabel) statusLabel.textContent = 'Synthesizing Design Model';
 
-  // 2. Input Bar in Processing State
+  // 3. Input Bar in Processing State
   if (textarea) {
     textarea.value = '';
     textarea.placeholder = 'In process...';
@@ -231,22 +361,22 @@ function sendPrompt(promptText) {
 
   updateActionButtonState();
 
-  // 3. Append User Message Bubble
+  // 4. Append User Message Bubble
   const userRow = document.createElement('div');
   userRow.className = 'user-message-row';
   userRow.innerHTML = `<div class="user-message-bubble">${escapeHtml(promptText)}</div>`;
   chatThread.appendChild(userRow);
 
-  // 4. Create Behind The Scenes Heuristic Reasoning Card
+  // 5. Create Behind The Scenes Heuristic Reasoning Card
   const btsId = 'bts-' + Date.now();
   const btsCard = createBehindTheScenesCard(btsId, promptText);
   chatThread.appendChild(btsCard);
 
   chatSection.scrollTop = chatSection.scrollHeight;
 
-  // 5. Execute Staggered AI Reasoning Steps
+  // 6. Execute Staggered AI Reasoning Steps
   runDesignSystemReasoning(btsId, promptText, () => {
-    // 6. Generate Response Widget / Critique
+    // 7. Generate Response Widget / Critique
     renderAIResponse(promptText, chatThread, () => {
       finishProcessing();
     });
@@ -464,7 +594,7 @@ function renderHierarchyChallengeWidget(chatThread) {
           </button>
         </div>
 
-        <div class="hierarchy-node" data-level="2" style="margin-left: 24px;">
+        <div class="hierarchy-node" data-level="2" style="margin-left: 20px;">
           <span class="hierarchy-node__connector">├──</span>
           <span class="hierarchy-node__level-badge">Level 2: Filter Scope</span>
           <input type="text" class="hierarchy-node__input" value="Filter Drawer / Segmented Facets" />
@@ -476,7 +606,7 @@ function renderHierarchyChallengeWidget(chatThread) {
           </button>
         </div>
 
-        <div class="hierarchy-node" data-level="3" style="margin-left: 48px;">
+        <div class="hierarchy-node" data-level="3" style="margin-left: 40px;">
           <span class="hierarchy-node__connector">└──</span>
           <span class="hierarchy-node__level-badge">Level 3: Container</span>
           <input type="text" class="hierarchy-node__input" value="Category Folder Directory" />
@@ -1030,39 +1160,42 @@ function initBehindScenesToggle() {
   });
 }
 
+function resetToMorningTasks() {
+  stopProcessing();
+  activeSessionId = null;
+  renderSessionList();
+
+  const tasksSection = document.getElementById('tasks-section');
+  const chatSection = document.getElementById('chat-section');
+  const chatThread = document.getElementById('chat-thread');
+  const content = document.getElementById('main-content');
+  const textarea = document.getElementById('screener-input');
+
+  if (tasksSection) tasksSection.style.display = 'flex';
+  if (chatSection) chatSection.style.display = 'none';
+  if (chatThread) chatThread.innerHTML = '';
+  if (content) content.classList.remove('chat-mode');
+  if (textarea) {
+    textarea.value = '';
+    textarea.placeholder = 'Ask Design AI... (e.g. "When to use Modals vs Drawers?" or "Build a 4-level navigation flow")';
+    textarea.style.height = 'auto';
+  }
+  updateActionButtonState();
+  if (window._closeSidebar) window._closeSidebar();
+}
+
 function initNewChatButtons() {
   const topNewChatBtn = document.getElementById('new-chat-btn');
   const sidebarNewChatBtn = document.getElementById('sidebar-new-chat');
-
-  function resetToMorningTasks() {
-    stopProcessing();
-    const tasksSection = document.getElementById('tasks-section');
-    const chatSection = document.getElementById('chat-section');
-    const chatThread = document.getElementById('chat-thread');
-    const content = document.getElementById('main-content');
-    const textarea = document.getElementById('screener-input');
-
-    if (tasksSection) tasksSection.style.display = 'flex';
-    if (chatSection) chatSection.style.display = 'none';
-    if (chatThread) chatThread.innerHTML = '';
-    if (content) content.classList.remove('chat-mode');
-    if (textarea) {
-      textarea.value = '';
-      textarea.placeholder = 'Ask Design AI... (e.g. "When to use Modals vs Drawers?" or "Build a 4-level navigation flow")';
-      textarea.style.height = 'auto';
-    }
-    updateActionButtonState();
-    if (window._closeSidebar) window._closeSidebar();
-  }
 
   if (topNewChatBtn) topNewChatBtn.addEventListener('click', resetToMorningTasks);
   if (sidebarNewChatBtn) sidebarNewChatBtn.addEventListener('click', resetToMorningTasks);
 }
 
-function initChatHistoryClicks() {
-  const chatItems = document.querySelectorAll('.sidebar__chat-item');
+function initCuratedChatClicks() {
+  const curatedItems = document.querySelectorAll('#sidebar-history button.sidebar__chat-item');
 
-  chatItems.forEach(item => {
+  curatedItems.forEach(item => {
     item.addEventListener('click', () => {
       const prompt = item.getAttribute('data-prompt') || item.querySelector('.sidebar__chat-title').textContent;
       sendPrompt(prompt);
@@ -1100,6 +1233,7 @@ function initSidebar() {
     overlay.classList.add('overlay--visible');
     document.body.style.overflow = 'hidden';
     closeDropdown();
+    renderSessionList();
   }
 
   function closeSidebar() {
