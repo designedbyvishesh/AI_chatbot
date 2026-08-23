@@ -6,8 +6,9 @@
 let isProcessing = false;
 let processingIntervals = [];
 let currentQuizIndex = 0;
+let isQuestioningMode = true;
 
-// Settings State
+// Settings & Provider Configuration
 let aiConfig = {
   mode: localStorage.getItem('ai_mode') || 'builtin',
   geminiKey: localStorage.getItem('gemini_api_key') || '',
@@ -20,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTextarea();
   initChipInteractions();
   initMicAndSendButton();
+  initInputBarActionButtons();
   initSidebar();
   initDropdownMenu();
   initSidebarTabs();
@@ -28,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initNewChatButtons();
   initChatHistoryClicks();
   initSettingsModal();
+  checkDatabaseStatus();
 });
 
 /* ─── Live Clock ─── */
@@ -48,6 +51,22 @@ function initClock() {
   setInterval(update, 30000);
 }
 
+/* ─── Database Live Health Check ─── */
+async function checkDatabaseStatus() {
+  try {
+    const res = await fetch('/api/db-status');
+    const data = await res.json();
+    if (data.status === 'connected') {
+      const statusLabel = document.getElementById('status-label');
+      if (statusLabel) {
+        statusLabel.title = `Connected to MongoDB Atlas (${data.cluster})`;
+      }
+    }
+  } catch (e) {
+    // Running in static mode without local node server
+  }
+}
+
 /* ─── Starter Task Items Interaction ─── */
 function initTaskInteractions() {
   const tasks = document.querySelectorAll('.task-item');
@@ -60,7 +79,7 @@ function initTaskInteractions() {
   });
 }
 
-/* ─── Textarea & Mic <-> Send <-> Stop Button ─── */
+/* ─── Textarea & Dynamic Button State ─── */
 function initTextarea() {
   const textarea = document.getElementById('screener-input');
   if (!textarea) return;
@@ -150,8 +169,37 @@ function initMicAndSendButton() {
   document.head.appendChild(style);
 }
 
+/* ─── Input Bar Action Buttons (+ widget button & Questioning Mode) ─── */
+function initInputBarActionButtons() {
+  const attachBtn = document.getElementById('attach-btn');
+  const toggleInputBtn = document.getElementById('toggle-input-btn');
+  const indepthBtn = document.getElementById('indepth-btn');
+
+  if (attachBtn) {
+    attachBtn.addEventListener('click', () => {
+      sendPrompt("Build a visual multi-level navigation hierarchy flow");
+    });
+  }
+
+  if (toggleInputBtn) {
+    toggleInputBtn.addEventListener('click', () => {
+      isQuestioningMode = !isQuestioningMode;
+      const icon = toggleInputBtn.querySelector('.material-symbols-outlined');
+      if (icon) {
+        icon.textContent = isQuestioningMode ? 'toggle_on' : 'toggle_off';
+      }
+    });
+  }
+
+  if (indepthBtn) {
+    indepthBtn.addEventListener('click', () => {
+      sendPrompt("Give me a deep UX Heuristics & Cognitive Load critique across modern design systems");
+    });
+  }
+}
+
 /* ═══════════════════════════════════════════════
-   CORE DISPATCHER & AI PROCESSING ENGINE
+   CORE DISPATCHER & AI PROCESSING PIPELINE
    ═══════════════════════════════════════════════ */
 function sendPrompt(promptText) {
   if (isProcessing) return;
@@ -194,12 +242,11 @@ function sendPrompt(promptText) {
   const btsCard = createBehindTheScenesCard(btsId, promptText);
   chatThread.appendChild(btsCard);
 
-  // Scroll to bottom
   chatSection.scrollTop = chatSection.scrollHeight;
 
   // 5. Execute Staggered AI Reasoning Steps
   runDesignSystemReasoning(btsId, promptText, () => {
-    // 6. Generate Response Widget / Critique based on Prompt
+    // 6. Generate Response Widget / Critique
     renderAIResponse(promptText, chatThread, () => {
       finishProcessing();
     });
@@ -213,7 +260,7 @@ function finishProcessing() {
   const statusLabel = document.getElementById('status-label');
   const chatSection = document.getElementById('chat-section');
 
-  if (textarea) textarea.placeholder = 'Ask Design AI... (e.g. "When to use Modals vs Drawers?" or "Give me a hierarchy test")';
+  if (textarea) textarea.placeholder = 'Ask Design AI... (e.g. "When to use Modals vs Drawers?" or "Build a 4-level navigation flow")';
   if (progressBox) progressBox.style.display = 'none';
   if (statusLabel) statusLabel.textContent = 'Prompting';
 
@@ -326,10 +373,10 @@ window.toggleCardCollapse = function(cardId) {
 
 function runDesignSystemReasoning(btsId, prompt, onComplete) {
   const schedule = [
-    { el: `${btsId}-s1`, delay: 350, progress: '25.00%' },
-    { el: `${btsId}-s2`, delay: 1100, progress: '58.40%' },
-    { el: `${btsId}-s3`, delay: 2100, progress: '85.20%' },
-    { el: `${btsId}-s4`, delay: 2800, progress: '96.80%' }
+    { el: `${btsId}-s1`, delay: 300, progress: '25.00%' },
+    { el: `${btsId}-s2`, delay: 900, progress: '58.40%' },
+    { el: `${btsId}-s3`, delay: 1700, progress: '85.20%' },
+    { el: `${btsId}-s4`, delay: 2400, progress: '96.80%' }
   ];
 
   schedule.forEach((item, idx) => {
@@ -343,7 +390,7 @@ function runDesignSystemReasoning(btsId, prompt, onComplete) {
       if (chatSection) chatSection.scrollTop = chatSection.scrollHeight;
 
       if (idx === schedule.length - 1) {
-        setTimeout(onComplete, 600);
+        setTimeout(onComplete, 500);
       }
     }, item.delay);
 
@@ -357,7 +404,7 @@ function runDesignSystemReasoning(btsId, prompt, onComplete) {
 function renderAIResponse(promptText, chatThread, callback) {
   const lower = promptText.toLowerCase();
 
-  // If live API key configured and mode is Gemini/Groq, we can query live API
+  // If live API key configured and mode is Gemini/Groq
   if (aiConfig.mode === 'gemini' && aiConfig.geminiKey) {
     callGeminiAPI(promptText, chatThread, callback);
     return;
@@ -367,7 +414,7 @@ function renderAIResponse(promptText, chatThread, callback) {
     return;
   }
 
-  // Otherwise, use Built-in Design Master Engine with Rich Interactive Widgets!
+  // Built-in UX Master Engine
   setTimeout(() => {
     if (lower.includes('hierarchy') || lower.includes('level') || lower.includes('flow') || lower.includes('filter') || lower.includes('folder')) {
       renderHierarchyChallengeWidget(chatThread);
@@ -383,7 +430,7 @@ function renderAIResponse(promptText, chatThread, callback) {
       renderComprehensiveDesignQuiz(chatThread);
     }
     callback();
-  }, 400);
+  }, 300);
 }
 
 /* ─── Interactive Widget 1: Multi-Level Hierarchy Flow Builder ─── */
@@ -463,7 +510,7 @@ window.addHierarchyChild = function(btn) {
   const currentNode = btn.closest('.hierarchy-node');
   const currentLevel = parseInt(currentNode.getAttribute('data-level') || '1', 10);
   const nextLevel = currentLevel + 1;
-  const nextIndent = nextLevel * 24;
+  const nextIndent = nextLevel * 20;
 
   const newNode = document.createElement('div');
   newNode.className = 'hierarchy-node';
@@ -483,7 +530,8 @@ window.addHierarchyChild = function(btn) {
   `;
 
   currentNode.after(newNode);
-  newNode.querySelector('input').focus();
+  const input = newNode.querySelector('input');
+  if (input) input.focus();
 };
 
 window.addHierarchyRootNode = function() {
@@ -574,7 +622,7 @@ window.evaluateHierarchyFlow = async function() {
     });
     const data = await res.json();
     const badge = document.getElementById('mongo-sync-badge');
-    if (badge) {
+    if (badge && data.success) {
       badge.textContent = '☁️ Saved in MongoDB Atlas';
     }
   } catch (err) {
@@ -764,6 +812,19 @@ window.selectMCQOption = function(btn, isCorrect, explanation, cardId) {
   `;
   slot.appendChild(feedback);
 
+  // ─── Save Quiz to MongoDB ───
+  try {
+    fetch('/api/quizzes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        quizId: cardId,
+        isCorrect,
+        answeredAt: new Date()
+      })
+    });
+  } catch (e) {}
+
   const chatSection = document.getElementById('chat-section');
   if (chatSection) chatSection.scrollTop = chatSection.scrollHeight;
 };
@@ -808,7 +869,6 @@ Format cleanly with Markdown headers and bullet points.`;
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini.';
 
     renderTextResponse(text, chatThread);
-    // If prompt is about hierarchy or quiz, attach interactive widgets as bonus!
     if (prompt.toLowerCase().includes('hierarchy') || prompt.toLowerCase().includes('flow')) {
       renderHierarchyChallengeWidget(chatThread);
     }
@@ -951,6 +1011,8 @@ function initSettingsModal() {
       closeModal();
     });
   }
+
+  window._closeSettingsModal = closeModal;
 }
 
 /* ═══════════════════════════════════════════════
@@ -1060,12 +1122,14 @@ function initSidebar() {
   overlay.addEventListener('click', () => {
     closeSidebar();
     closeDropdown();
+    if (window._closeSettingsModal) window._closeSettingsModal();
   });
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeSidebar();
       closeDropdown();
+      if (window._closeSettingsModal) window._closeSettingsModal();
     }
   });
 
