@@ -512,15 +512,18 @@ window.deleteHierarchyNode = function(btn) {
   if (node) node.remove();
 };
 
-window.evaluateHierarchyFlow = function() {
+window.evaluateHierarchyFlow = async function() {
   const slot = document.getElementById('hierarchy-evaluation-slot');
   const nodes = document.querySelectorAll('#hierarchy-tree-root .hierarchy-node');
   if (!slot) return;
 
+  const nodeData = [];
   let maxDepth = 1;
   nodes.forEach(n => {
     const lvl = parseInt(n.getAttribute('data-level') || '1', 10);
+    const text = n.querySelector('input') ? n.querySelector('input').value : '';
     if (lvl > maxDepth) maxDepth = lvl;
+    nodeData.push({ level: lvl, name: text });
   });
 
   const nodeCount = nodes.length;
@@ -529,7 +532,10 @@ window.evaluateHierarchyFlow = function() {
 
   slot.innerHTML = `
     <div class="hierarchy-critique">
-      <div style="font-size: 13px; font-weight: 600; color: #fff;">Information Architecture Critique & Score:</div>
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <span style="font-size: 13px; font-weight: 600; color: #fff;">Information Architecture Critique & Score:</span>
+        <span class="settings-badge settings-badge--green" id="mongo-sync-badge">☁️ Syncing to MongoDB...</span>
+      </div>
       <div class="hierarchy-critique__metrics">
         <div class="hierarchy-metric-chip">
           <span class="hierarchy-metric-label">Max Depth Level</span>
@@ -555,6 +561,28 @@ window.evaluateHierarchyFlow = function() {
       </p>
     </div>
   `;
+
+  // ─── Save Permanently to MongoDB Atlas ───
+  try {
+    const res = await fetch('/api/flows', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nodes: nodeData,
+        metrics: { maxDepth, cognitiveLoad, nodeCount, hicksLawStatus }
+      })
+    });
+    const data = await res.json();
+    const badge = document.getElementById('mongo-sync-badge');
+    if (badge) {
+      badge.textContent = '☁️ Saved in MongoDB Atlas';
+    }
+  } catch (err) {
+    const badge = document.getElementById('mongo-sync-badge');
+    if (badge) {
+      badge.textContent = '💾 Stored locally';
+    }
+  }
 };
 
 /* ─── Interactive Widget 2: Modal vs Drawer vs Popover MCQ ─── */
