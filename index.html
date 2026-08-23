@@ -214,7 +214,7 @@
       <div class="ambient-glow ambient-glow--left" aria-hidden="true"></div>
       <div class="ambient-glow ambient-glow--right" aria-hidden="true"></div>
 
-      <!-- Tasks Section -->
+      <!-- Tasks Section (Page 1) -->
       <section class="tasks-section" id="tasks-section">
         <div class="tasks-section__greeting" id="greeting">
           <span class="tasks-section__wave">👋</span>
@@ -271,6 +271,173 @@
         </div>
       </section>
 
+      <!-- ═══════ AI CHAT & ANALYZING VIEW (Page 2 / Page 4) ═══════ -->
+      <section class="chat-section" id="chat-section" style="display: none;">
+        <!-- User Prompt Bubble -->
+        <div class="user-message-row" id="user-message-row">
+          <div class="user-message-bubble" id="user-message-text">
+            Show me stocks with ROE above 15%, profit growing at least 10% YoY, PE below 20, and debt-to-equity less than 0.5.
+          </div>
+        </div>
+
+        <!-- AI Analyzing / Behind the Scenes -->
+        <div class="behind-scenes-card" id="behind-scenes-card">
+          <button class="behind-scenes__header" id="behind-scenes-toggle" aria-expanded="true">
+            <span class="material-symbols-outlined behind-scenes__arrow">keyboard_arrow_down</span>
+            <span class="behind-scenes__title">Behind the scenes</span>
+          </button>
+
+          <div class="behind-scenes__content" id="behind-scenes-content">
+            <!-- Step 1 -->
+            <div class="bts-step bts-step--done" id="bts-step-1">
+              <div class="bts-step__indicator">
+                <span class="material-symbols-outlined bts-step__icon">radio_button_checked</span>
+                <div class="bts-step__line"></div>
+              </div>
+              <div class="bts-step__body">
+                <div class="bts-step__text">Analyzing your request</div>
+              </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="bts-step bts-step--done" id="bts-step-2">
+              <div class="bts-step__indicator">
+                <span class="material-symbols-outlined bts-step__icon">radio_button_checked</span>
+                <div class="bts-step__line"></div>
+              </div>
+              <div class="bts-step__body">
+                <div class="bts-step__text">Planning execution</div>
+              </div>
+            </div>
+
+            <!-- Step 3: Fetching with Web Sources -->
+            <div class="bts-step bts-step--done" id="bts-step-3">
+              <div class="bts-step__indicator">
+                <span class="material-symbols-outlined bts-step__icon">language</span>
+                <div class="bts-step__line"></div>
+              </div>
+              <div class="bts-step__body">
+                <div class="bts-step__text">[FETCHING] Scanning 1,200+ NSE/BSE tickers for 3-month price peaks...</div>
+                
+                <!-- Web Sources Box -->
+                <div class="bts-sources-box" id="bts-sources">
+                  <div class="bts-source-item">
+                    <div class="bts-source-item__left">
+                      <span class="bts-source-icon">🌐</span>
+                      <span class="bts-source-title">Nifty Healthcare Stocks: A Side-by-Side Comparison for Investors</span>
+                    </div>
+                    <span class="bts-source-domain">www.enrichmoney.in</span>
+                  </div>
+                  <div class="bts-source-item">
+                    <div class="bts-source-item__left">
+                      <span class="bts-source-icon">🌐</span>
+                      <span class="bts-source-title">Nifty Healthcare Stocks: A Side-by-Side Comparison for Investors</span>
+                    </div>
+                    <span class="bts-source-domain">www.enrichmoney.in</span>
+                  </div>
+                  <div class="bts-source-item">
+                    <div class="bts-source-item__left">
+                      <span class="bts-source-icon">🌐</span>
+                      <span class="bts-source-title">Nifty Healthcare Stocks: A Side-by-Side Comparison for Investors</span>
+                    </div>
+                    <span class="bts-source-domain">www.enrichmoney.in</span>
+                  </div>
+                  <div class="bts-source-item">
+                    <div class="bts-source-item__left">
+                      <span class="bts-source-icon">🌐</span>
+                      <span class="bts-source-title">Top performing Nifty stocks surged up to 146% in a year; do you own any? - BusinessToday</span>
+                    </div>
+                    <span class="bts-source-domain">www.enrichmoney.in</span>
+                  </div>
+                  <div class="bts-source-item">
+                    <div class="bts-source-item__left">
+                      <span class="bts-source-icon">🌐</span>
+                      <span class="bts-source-title">Top stocks to invest in India in 2024</span>
+                    </div>
+                    <span class="bts-source-domain">www.enrichmoney.in</span>
+                  </div>
+                </div>
+
+                <div class="bts-step__result">
+                  <span class="material-symbols-outlined bts-check-icon">check</span>
+                  <span>DONE (1,200+ matches found).</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="bts-step bts-step--done" id="bts-step-4">
+              <div class="bts-step__indicator">
+                <span class="material-symbols-outlined bts-step__icon">pageview</span>
+                <div class="bts-step__line"></div>
+              </div>
+              <div class="bts-step__body">
+                <div class="bts-step__text">[CALCULATING] Running EMA 50/200 cross-reference for matched tickers...</div>
+                <div class="bts-step__result">
+                  <span class="material-symbols-outlined bts-check-icon">check</span>
+                  <span>DONE (142 matches found).</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="bts-step bts-step--done" id="bts-step-5">
+              <div class="bts-step__indicator">
+                <span class="material-symbols-outlined bts-step__icon">pageview</span>
+                <div class="bts-step__line"></div>
+              </div>
+              <div class="bts-step__body">
+                <div class="bts-step__text">[CALCULATING] Analyzing RSI (Relative Strength Index)...</div>
+                <div class="bts-step__result">
+                  <span class="material-symbols-outlined bts-check-icon">check</span>
+                  <span>DONE (96 stocks shortlisted)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 6 -->
+            <div class="bts-step bts-step--done" id="bts-step-6">
+              <div class="bts-step__indicator">
+                <span class="material-symbols-outlined bts-step__icon">pageview</span>
+                <div class="bts-step__line"></div>
+              </div>
+              <div class="bts-step__body">
+                <div class="bts-step__text">[Calculating] Evaluating Analyzing volume spikes vs 30-day average...</div>
+                <div class="bts-step__result">
+                  <span class="material-symbols-outlined bts-check-icon">check</span>
+                  <span>DONE (64 stocks showing unusual activity)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 7 -->
+            <div class="bts-step bts-step--done" id="bts-step-7">
+              <div class="bts-step__indicator">
+                <span class="material-symbols-outlined bts-step__icon">pageview</span>
+                <div class="bts-step__line"></div>
+              </div>
+              <div class="bts-step__body">
+                <div class="bts-step__text">[Calculating] Evaluating Analyzing volume spikes vs 30-day average...</div>
+                <div class="bts-step__result">
+                  <span class="material-symbols-outlined bts-check-icon">check</span>
+                  <span>DONE (64 stocks showing unusual activity)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 8: Active/Preparing -->
+            <div class="bts-step bts-step--active" id="bts-step-8">
+              <div class="bts-step__indicator">
+                <span class="material-symbols-outlined bts-step__icon bts-step__icon--spinning">progress_activity</span>
+              </div>
+              <div class="bts-step__body">
+                <div class="bts-step__text">Preparing final screener output...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ═══════ INPUT BAR ═══════ -->
       <div class="input-bar" id="input-bar">
         <div class="input-bar__glow" aria-hidden="true"></div>
@@ -291,9 +458,19 @@
               <span class="input-bar__action-label">Take my inputs during process</span>
             </button>
           </div>
-          <button class="input-bar__mic-btn" id="mic-btn" aria-label="Voice input">
-            <span class="material-symbols-outlined">mic</span>
-          </button>
+          
+          <div class="input-bar__actions-right">
+            <!-- Progress counter shown during AI processing -->
+            <div class="input-bar__progress" id="input-progress" style="display: none;">
+              <span class="material-symbols-outlined input-bar__progress-spinner">progress_activity</span>
+              <span class="input-bar__progress-text" id="progress-value">75.56%</span>
+            </div>
+
+            <!-- Action Button: Mic / Send / Stop -->
+            <button class="input-bar__mic-btn" id="mic-btn" aria-label="Voice input or submit">
+              <span class="material-symbols-outlined" id="mic-btn-icon">mic</span>
+            </button>
+          </div>
         </div>
       </div>
     </main>
