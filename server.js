@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const dns = require('dns');
 // Set public DNS fallback for Windows SRV resolution
 try {
@@ -12,8 +14,12 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// MongoDB Connection URI
-const uri = process.env.MONGODB_URI || "mongodb+srv://visheshkatiyar31_db_user:Vc4pZee5CUzAvFej@cluster0.pfee3ys.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+// MongoDB Connection URI — loaded from .env (never hardcoded in source)
+const uri = process.env.MONGODB_URI;
+if (!uri) {
+  console.error('❌ MONGODB_URI is not set. Create a .env file with MONGODB_URI=mongodb+srv://...');
+  process.exit(1);
+}
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -99,7 +105,7 @@ app.post('/api/sessions', async (req, res) => {
     const collection = db.collection('chat_sessions');
     const result = await collection.insertOne({
       ...req.body,
-      timestamp: new Date()
+      serverTimestamp: new Date()
     });
     res.json({ success: true, id: result.insertedId });
   } catch (err) {
@@ -107,13 +113,30 @@ app.post('/api/sessions', async (req, res) => {
   }
 });
 
-// ─── Get Chat Sessions ───
+// ─── Get Chat Sessions (normalize _id → id) ───
 app.get('/api/sessions', async (req, res) => {
   try {
     if (!db) return res.status(503).json({ error: 'DB not connected' });
     const collection = db.collection('chat_sessions');
-    const sessions = await collection.find({}).sort({ timestamp: -1 }).limit(30).toArray();
+    const raw = await collection.find({}).sort({ serverTimestamp: -1 }).limit(50).toArray();
+    const sessions = raw.map(doc => ({
+      ...doc,
+      id: doc.id || doc._id.toString(),
+      _id: undefined
+    }));
     res.json({ success: true, sessions });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Delete Chat Session ───
+app.delete('/api/sessions/:id', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB not connected' });
+    const collection = db.collection('chat_sessions');
+    await collection.deleteOne({ id: req.params.id });
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -122,3 +145,15 @@ app.get('/api/sessions', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Design AI Server running at http://localhost:${PORT}`);
 });
+
+// ─── Graceful Shutdown ───
+async function shutdown() {
+  console.log('\n🛑 Shutting down gracefully...');
+  try {
+    await client.close();
+    console.log('✅ MongoDB connection closed.');
+  } catch (e) {}
+  process.exit(0);
+}
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);

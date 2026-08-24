@@ -28,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initDropdownMenu();
   initSidebarTabs();
   initDropdownToggles();
-  initBehindScenesToggle();
   initNewChatButtons();
   initCuratedChatClicks();
   initSettingsModal();
@@ -140,15 +139,23 @@ function renderSessionList() {
 function openSession(session) {
   activeSessionId = session.id;
   renderSessionList();
+
+  // Clear existing chat thread before replaying
+  const chatThread = document.getElementById('chat-thread');
+  if (chatThread) chatThread.innerHTML = '';
+
   sendPrompt(session.prompt || session.title, false);
   if (window._closeSidebar) window._closeSidebar();
 }
 
 window.deleteSession = function(e, sessionId) {
   e.stopPropagation();
-  allSessions = allSessions.filter(s => s.id !== sessionId && s._id !== sessionId);
+  allSessions = allSessions.filter(s => s.id !== sessionId);
   localStorage.setItem('design_chat_sessions', JSON.stringify(allSessions));
-  
+
+  // Also delete from MongoDB
+  fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' }).catch(() => {});
+
   if (activeSessionId === sessionId) {
     activeSessionId = null;
     resetToMorningTasks();
@@ -312,7 +319,7 @@ function sendPrompt(promptText, createNewSession = true) {
   isProcessing = true;
 
   // 1. Manage Active Session
-  if (createNewSession || !activeSessionId) {
+  if (createNewSession) {
     activeSessionId = 'session_' + Date.now();
     const newSession = {
       id: activeSessionId,
@@ -322,17 +329,19 @@ function sendPrompt(promptText, createNewSession = true) {
       model: getActiveModelName()
     };
     allSessions.unshift(newSession);
+
+    // Cap at 50 sessions to prevent unbounded growth
+    if (allSessions.length > 50) allSessions = allSessions.slice(0, 50);
+
     localStorage.setItem('design_chat_sessions', JSON.stringify(allSessions));
     renderSessionList();
 
     // Save to MongoDB Atlas
-    try {
-      fetch('/api/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newSession)
-      });
-    } catch (e) {}
+    fetch('/api/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newSession)
+    }).catch(() => {});
   }
 
   // 2. Switch View to Chat Mode
@@ -777,25 +786,25 @@ function renderModalVsDrawerMCQWidget(chatThread) {
     </div>
 
     <!-- MCQ Card -->
-    <div class="quiz-card" id="quiz-modal-card">
+    <div class="quiz-card" id="quiz-modal-card-${Date.now()}">
       <div class="quiz-card__badge">Interaction MCQ #1 · Modals & Drawers</div>
       <div class="quiz-card__question">
         A user is editing a complex trading filter with 14 parameters while needing to observe live updating stock charts in the background. Which interaction component should you use?
       </div>
       <div class="quiz-options-list">
-        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'A centered blocking modal requires complete focus and dims the background, completely obstructing the live chart the user needs to watch.', 'quiz-modal-card')">
+        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'A centered blocking modal requires complete focus and dims the background, completely obstructing the live chart the user needs to watch.')">
           <span class="quiz-option-btn__radio"></span>
           <span class="quiz-option-btn__text"><strong>A. Centered Modal Dialog</strong> — Dim the screen with a heavy backdrop to maximize focus.</span>
         </button>
-        <button class="quiz-option-btn" onclick="selectMCQOption(this, true, 'A right slide-out Drawer (Side Sheet) preserves spatial context, allowing simultaneous filter manipulation and chart observation without blocking the core viewport.', 'quiz-modal-card')">
+        <button class="quiz-option-btn" onclick="selectMCQOption(this, true, 'A right slide-out Drawer (Side Sheet) preserves spatial context, allowing simultaneous filter manipulation and chart observation without blocking the core viewport.')">
           <span class="quiz-option-btn__radio"></span>
           <span class="quiz-option-btn__text"><strong>B. Right Slide-Over Drawer (Side Sheet)</strong> — Non-blocking or semi-transparent sheet that leaves background charts visible.</span>
         </button>
-        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'Popovers are intended for short contextual snippets (2-3 controls max) and will overflow/cause extreme scroll fatigue for 14 parameters.', 'quiz-modal-card')">
+        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'Popovers are intended for short contextual snippets (2-3 controls max) and will overflow/cause extreme scroll fatigue for 14 parameters.')">
           <span class="quiz-option-btn__radio"></span>
           <span class="quiz-option-btn__text"><strong>C. Floating Hover Popover</strong> — Trigger a tooltip popover from the filter button.</span>
         </button>
-        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'Full-page routing completely destroys working memory and unloads the live market chart state.', 'quiz-modal-card')">
+        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'Full-page routing completely destroys working memory and unloads the live market chart state.')">
           <span class="quiz-option-btn__radio"></span>
           <span class="quiz-option-btn__text"><strong>D. Full Page Route Navigation</strong> — Open a dedicated settings page.</span>
         </button>
@@ -815,21 +824,21 @@ function renderTabsVsSegmentedMCQWidget(chatThread) {
       <span class="material-symbols-outlined">tab</span>
       <span>Design System Component Decision: Tabs vs Segmented Controls</span>
     </div>
-    <div class="quiz-card" id="quiz-tabs-card">
+    <div class="quiz-card" id="quiz-tabs-card-${Date.now()}">
       <div class="quiz-card__badge">Interaction MCQ #2 · Navigation Boundaries</div>
       <div class="quiz-card__question">
         When should you choose a <strong>Segmented Control</strong> over a standard <strong>Tab Bar</strong>?
       </div>
       <div class="quiz-options-list">
-        <button class="quiz-option-btn" onclick="selectMCQOption(this, true, 'According to Apple HIG & Material 3, Segmented Controls are mutually exclusive toggles modifying a single view or query (e.g. Day / Week / Month / Year), whereas Tabs navigate between distinct standalone views/sub-pages.', 'quiz-tabs-card')">
+        <button class="quiz-option-btn" onclick="selectMCQOption(this, true, 'According to Apple HIG & Material 3, Segmented Controls are mutually exclusive toggles modifying a single view or query (e.g. Day / Week / Month / Year), whereas Tabs navigate between distinct standalone views/sub-pages.')">
           <span class="quiz-option-btn__radio"></span>
           <span class="quiz-option-btn__text"><strong>A. Mutually exclusive filtering on a single content view</strong> (e.g., 1D / 1W / 1M / 1Y chart intervals).</span>
         </button>
-        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'Tabs with badges or independent views should be standard Navigation Tabs, not Segmented Controls.', 'quiz-tabs-card')">
+        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'Tabs with badges or independent views should be standard Navigation Tabs, not Segmented Controls.')">
           <span class="quiz-option-btn__radio"></span>
           <span class="quiz-option-btn__text"><strong>B. When there are 8 or more unrelated modules</strong> with distinct header layouts.</span>
         </button>
-        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'Segmented controls are for compact, tightly coupled state switching, not entire page routes.', 'quiz-tabs-card')">
+        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'Segmented controls are for compact, tightly coupled state switching, not entire page routes.')">
           <span class="quiz-option-btn__radio"></span>
           <span class="quiz-option-btn__text"><strong>C. For primary top-level app routing</strong> between Dashboard, Portfolio, and Settings.</span>
         </button>
@@ -849,21 +858,21 @@ function renderAnimationMCQWidget(chatThread) {
       <span class="material-symbols-outlined">animation</span>
       <span>Motion Design Heuristics & Easing Curves</span>
     </div>
-    <div class="quiz-card" id="quiz-motion-card">
+    <div class="quiz-card" id="quiz-motion-card-${Date.now()}">
       <div class="quiz-card__badge">Interaction MCQ #3 · Micro-Motion</div>
       <div class="quiz-card__question">
         Which easing curve & duration is recommended for micro-interactions (e.g., button press feedback, dropdown expand) according to Google Material Motion?
       </div>
       <div class="quiz-options-list">
-        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'Linear easing feels robotic and unnatural because physical objects in the real world have mass and acceleration.', 'quiz-motion-card')">
+        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'Linear easing feels robotic and unnatural because physical objects in the real world have mass and acceleration.')">
           <span class="quiz-option-btn__radio"></span>
           <span class="quiz-option-btn__text"><strong>A. Linear easing (1000ms)</strong> — Constant velocity over 1 second.</span>
         </button>
-        <button class="quiz-option-btn" onclick="selectMCQOption(this, true, 'Deceleration/Emphasized curves (cubic-bezier(0.2, 0, 0, 1) over 150-250ms) feel snappy and human, stopping briskly when elements arrive on screen.', 'quiz-motion-card')">
+        <button class="quiz-option-btn" onclick="selectMCQOption(this, true, 'Deceleration/Emphasized curves (cubic-bezier(0.2, 0, 0, 1) over 150-250ms) feel snappy and human, stopping briskly when elements arrive on screen.')">
           <span class="quiz-option-btn__radio"></span>
           <span class="quiz-option-btn__text"><strong>B. Decelerate / Emphasized Easing (150ms – 250ms)</strong> — Starts fast and gently rests.</span>
         </button>
-        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'Heavy bounce on every click causes motion sickness and slows experienced users down.', 'quiz-motion-card')">
+        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'Heavy bounce on every click causes motion sickness and slows experienced users down.')">
           <span class="quiz-option-btn__radio"></span>
           <span class="quiz-option-btn__text"><strong>C. Heavy Elastic Bounce (600ms)</strong> — Spring oscillation with multiple overshoots.</span>
         </button>
@@ -883,21 +892,21 @@ function renderIndicatorsMCQWidget(chatThread) {
       <span class="material-symbols-outlined">hourglass_top</span>
       <span>Progress Indicators & Perceived Performance</span>
     </div>
-    <div class="quiz-card" id="quiz-indicator-card">
+    <div class="quiz-card" id="quiz-indicator-card-${Date.now()}">
       <div class="quiz-card__badge">Interaction MCQ #4 · Loading States</div>
       <div class="quiz-card__question">
         When page load latency is between <strong>1.5 to 3.0 seconds</strong>, which loading pattern produces the lowest perceived wait time?
       </div>
       <div class="quiz-options-list">
-        <button class="quiz-option-btn" onclick="selectMCQOption(this, true, 'Skeleton loaders outline the incoming content structure, giving immediate visual feedback and making the perceived wait time up to 30% shorter compared to spinners.', 'quiz-indicator-card')">
+        <button class="quiz-option-btn" onclick="selectMCQOption(this, true, 'Skeleton loaders outline the incoming content structure, giving immediate visual feedback and making the perceived wait time up to 30% shorter compared to spinners.')">
           <span class="quiz-option-btn__radio"></span>
           <span class="quiz-option-btn__text"><strong>A. Content Skeleton Shimmer Screens</strong> — Placeholder shapes matching the final card layouts.</span>
         </button>
-        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'Full-screen spinners provide zero information about what is loading and amplify perceived wait time.', 'quiz-indicator-card')">
+        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'Full-screen spinners provide zero information about what is loading and amplify perceived wait time.')">
           <span class="quiz-option-btn__radio"></span>
           <span class="quiz-option-btn__text"><strong>B. Full-Screen Blocking Spinner</strong> with a dark overlay.</span>
         </button>
-        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'Blank screens lead users to assume the app crashed or froze.', 'quiz-indicator-card')">
+        <button class="quiz-option-btn" onclick="selectMCQOption(this, false, 'Blank screens lead users to assume the app crashed or froze.')">
           <span class="quiz-option-btn__radio"></span>
           <span class="quiz-option-btn__text"><strong>C. Completely Blank Screen</strong> until all assets finish.</span>
         </button>
@@ -913,8 +922,8 @@ function renderComprehensiveDesignQuiz(chatThread) {
 }
 
 /* ─── Generic MCQ Selection Handler ─── */
-window.selectMCQOption = function(btn, isCorrect, explanation, cardId) {
-  const card = document.getElementById(cardId) || btn.closest('.quiz-card');
+window.selectMCQOption = function(btn, isCorrect, explanation) {
+  const card = btn.closest('.quiz-card');
   if (!card) return;
 
   const allBtns = card.querySelectorAll('.quiz-option-btn');
@@ -943,17 +952,15 @@ window.selectMCQOption = function(btn, isCorrect, explanation, cardId) {
   slot.appendChild(feedback);
 
   // ─── Save Quiz to MongoDB ───
-  try {
-    fetch('/api/quizzes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        quizId: cardId,
-        isCorrect,
-        answeredAt: new Date()
-      })
-    });
-  } catch (e) {}
+  fetch('/api/quizzes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      quizId: card.id,
+      isCorrect,
+      answeredAt: new Date()
+    })
+  }).catch(() => {});
 
   const chatSection = document.getElementById('chat-section');
   if (chatSection) chatSection.scrollTop = chatSection.scrollHeight;
@@ -1148,17 +1155,6 @@ function initSettingsModal() {
 /* ═══════════════════════════════════════════════
    NAVIGATION, SIDEBAR & DROPDOWN HANDLERS
    ═══════════════════════════════════════════════ */
-function initBehindScenesToggle() {
-  const toggleBtn = document.getElementById('behind-scenes-toggle');
-  const card = document.getElementById('behind-scenes-card');
-
-  if (!toggleBtn || !card) return;
-
-  toggleBtn.addEventListener('click', () => {
-    const isCollapsed = card.classList.toggle('collapsed');
-    toggleBtn.setAttribute('aria-expanded', !isCollapsed);
-  });
-}
 
 function resetToMorningTasks() {
   stopProcessing();

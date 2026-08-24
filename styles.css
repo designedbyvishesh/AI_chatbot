@@ -1645,6 +1645,12 @@ textarea {
   font-style: italic;
 }
 
+.sidebar__chat-star {
+  font-size: 18px;
+  color: #f5a623;
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+}
+
 /* ═══════════════════════════════════════════════
    RIGHT DROPDOWN MENU
    ═══════════════════════════════════════════════ */

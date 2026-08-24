@@ -1,16 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Interactive Design System & UX Architecture AI Tutor - Master interaction patterns, information hierarchy, modals, tabs, and micro-animations with real-time generative feedback." />
+  <meta name="description"
+    content="Interactive Design System & UX Architecture AI Tutor - Master interaction patterns, information hierarchy, modals, tabs, and micro-animations with real-time generative feedback." />
   <title>Interaction & Design System AI Tutor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Text&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
   <div class="app-shell" id="app-shell">
     <!-- ═══════ TOP BAR ═══════ -->
@@ -18,9 +23,9 @@
       <div class="topbar__left">
         <div class="topbar__logo" id="logo" title="Design System AI Engine">
           <svg width="28" height="24" viewBox="0 0 28 24" fill="none">
-            <rect x="2" y="4" width="8" height="16" rx="2" fill="#4CAF50"/>
-            <rect x="12" y="8" width="6" height="12" rx="2" fill="#66BB6A"/>
-            <rect x="20" y="2" width="6" height="18" rx="2" fill="#81C784"/>
+            <rect x="2" y="4" width="8" height="16" rx="2" fill="#4CAF50" />
+            <rect x="12" y="8" width="6" height="12" rx="2" fill="#66BB6A" />
+            <rect x="20" y="2" width="6" height="18" rx="2" fill="#81C784" />
           </svg>
         </div>
         <button class="topbar__icon-btn" id="menu-btn" aria-label="Open sidebar" title="Chat History & Topics">
@@ -34,7 +39,8 @@
       <span class="topbar__status" id="status-label">Prompting</span>
       <div class="topbar__right">
         <span class="topbar__time" id="current-time">07:00 AM</span>
-        <button class="topbar__icon-btn topbar__star" id="settings-trigger-btn" aria-label="AI Engine Settings" title="AI Provider & Unlimited Tokens Settings">
+        <button class="topbar__icon-btn topbar__star" id="settings-trigger-btn" aria-label="AI Engine Settings"
+          title="AI Provider & Unlimited Tokens Settings">
           <span class="material-symbols-outlined">kid_star</span>
         </button>
         <button class="topbar__icon-btn" id="more-btn" aria-label="More options" title="Page Options">
@@ -52,9 +58,9 @@
       <div class="sidebar__header">
         <div class="sidebar__logo">
           <svg width="31" height="27" viewBox="0 0 31 27" fill="none">
-            <rect x="2" y="4" width="9" height="19" rx="2" fill="#4CAF50"/>
-            <rect x="13" y="8" width="7" height="14" rx="2" fill="#66BB6A"/>
-            <rect x="22" y="2" width="7" height="21" rx="2" fill="#81C784"/>
+            <rect x="2" y="4" width="9" height="19" rx="2" fill="#4CAF50" />
+            <rect x="13" y="8" width="7" height="14" rx="2" fill="#66BB6A" />
+            <rect x="22" y="2" width="7" height="21" rx="2" fill="#81C784" />
           </svg>
         </div>
         <button class="sidebar__close-btn" id="sidebar-close-btn" aria-label="Close sidebar">
@@ -107,7 +113,8 @@
             <span class="sidebar__section-title">Design Challenges</span>
           </div>
 
-          <button class="sidebar__chat-item" data-prompt="Quiz me on when to use Modals vs Drawers vs Popovers in web apps">
+          <button class="sidebar__chat-item"
+            data-prompt="Quiz me on when to use Modals vs Drawers vs Popovers in web apps">
             <div class="sidebar__chat-icon">
               <span class="material-symbols-outlined">quiz</span>
             </div>
@@ -121,7 +128,8 @@
             </div>
           </button>
 
-          <button class="sidebar__chat-item" data-prompt="Give me a 4-level information hierarchy challenge: Tab -> Filters -> Folders -> Files">
+          <button class="sidebar__chat-item"
+            data-prompt="Give me a 4-level information hierarchy challenge: Tab -> Filters -> Folders -> Files">
             <div class="sidebar__chat-icon">
               <span class="material-symbols-outlined">account_tree</span>
             </div>
@@ -150,7 +158,8 @@
             <span class="material-symbols-outlined sidebar__chat-star">kid_star</span>
           </button>
 
-          <button class="sidebar__chat-item" data-prompt="What animation easing curves are best for micro-interactions vs page transitions?">
+          <button class="sidebar__chat-item"
+            data-prompt="What animation easing curves are best for micro-interactions vs page transitions?">
             <div class="sidebar__chat-icon">
               <span class="material-symbols-outlined">animation</span>
             </div>
@@ -164,7 +173,8 @@
             </div>
           </button>
 
-          <button class="sidebar__chat-item" data-prompt="When to use determinate progress bars vs skeleton loaders vs spinning indicators?">
+          <button class="sidebar__chat-item"
+            data-prompt="When to use determinate progress bars vs skeleton loaders vs spinning indicators?">
             <div class="sidebar__chat-icon">
               <span class="material-symbols-outlined">hourglass_top</span>
             </div>
@@ -197,7 +207,7 @@
       <button class="dropdown-menu__item dropdown-menu__item--toggle" id="dropdown-small-text">
         <span class="material-symbols-outlined">lowercase</span>
         <span>Small text</span>
-        <span class="material-symbols-outlined dropdown-menu__toggle dropdown-menu__toggle--on">toggle_on</span>
+        <span class="material-symbols-outlined dropdown-menu__toggle">toggle_off</span>
       </button>
       <button class="dropdown-menu__item dropdown-menu__item--toggle" id="dropdown-full-width">
         <span class="material-symbols-outlined">fit_screen</span>
@@ -237,7 +247,8 @@
 
         <div class="settings-modal__body">
           <p class="settings-modal__desc">
-            Choose your AI execution mode. You can use our <strong>Built-in Offline Master Engine</strong> for zero-cost instant answers, or link free API keys for unlimited live reasoning.
+            Choose your AI execution mode. You can use our <strong>Built-in Offline Master Engine</strong> for zero-cost
+            instant answers, or link free API keys for unlimited live reasoning.
           </p>
 
           <div class="settings-provider-group">
@@ -249,7 +260,8 @@
                   <span class="settings-badge settings-badge--green">Unlimited / Instant / Free</span>
                 </div>
                 <p class="settings-provider-detail">
-                  Zero setup, offline capable. Includes 100+ design system heuristics, interactive flow evaluation, and MCQ generators.
+                  Zero setup, offline capable. Includes 100+ design system heuristics, interactive flow evaluation, and
+                  MCQ generators.
                 </p>
               </div>
             </label>
@@ -265,8 +277,10 @@
                   Fast live reasoning from Google AI Studio. 1M token window with generous free tier.
                 </p>
                 <div class="settings-key-input-box" id="gemini-key-box" style="display: none;">
-                  <input type="password" id="gemini-api-key" placeholder="Enter Gemini API Key (AIzaSy...)" class="settings-input" />
-                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" class="settings-key-link">Get Free Key ↗</a>
+                  <input type="password" id="gemini-api-key" placeholder="Enter Gemini API Key (AIzaSy...)"
+                    class="settings-input" />
+                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener"
+                    class="settings-key-link">Get Free Key ↗</a>
                 </div>
               </div>
             </label>
@@ -282,8 +296,10 @@
                   Sub-second streaming token generation on high-speed LPU hardware.
                 </p>
                 <div class="settings-key-input-box" id="groq-key-box" style="display: none;">
-                  <input type="password" id="groq-api-key" placeholder="Enter Groq API Key (gsk_...)" class="settings-input" />
-                  <a href="https://console.groq.com/keys" target="_blank" rel="noopener" class="settings-key-link">Get Free Key ↗</a>
+                  <input type="password" id="groq-api-key" placeholder="Enter Groq API Key (gsk_...)"
+                    class="settings-input" />
+                  <a href="https://console.groq.com/keys" target="_blank" rel="noopener" class="settings-key-link">Get
+                    Free Key ↗</a>
                 </div>
               </div>
             </label>
@@ -313,21 +329,25 @@
 
         <div class="tasks-list-wrapper" id="tasks-list-wrapper">
           <div class="tasks-list" id="tasks-list">
-            <div class="task-item task-item--completed" id="task-1" data-prompt="Quiz me on when to use Modals vs Drawers vs Popovers">
+            <div class="task-item task-item--completed" id="task-1"
+              data-prompt="Quiz me on when to use Modals vs Drawers vs Popovers">
               <div class="task-item__checkbox task-item__checkbox--done">
                 <span class="material-symbols-outlined">check</span>
               </div>
               <span class="task-item__label">Mastering Modals vs Drawers vs Popovers</span>
             </div>
-            <div class="task-item" id="task-2" data-prompt="Give me a 4-level information hierarchy challenge: Tab -> Filters -> Folders -> Files">
+            <div class="task-item" id="task-2"
+              data-prompt="Give me a 4-level information hierarchy challenge: Tab -> Filters -> Folders -> Files">
               <div class="task-item__checkbox"></div>
               <span class="task-item__label">Information Architecture: 4-Level Flow Builder</span>
             </div>
-            <div class="task-item" id="task-3" data-prompt="When should I use Tabs vs Segmented Controls vs Accordions?">
+            <div class="task-item" id="task-3"
+              data-prompt="When should I use Tabs vs Segmented Controls vs Accordions?">
               <div class="task-item__checkbox"></div>
               <span class="task-item__label">Tabs vs Segmented Controls vs Accordions</span>
             </div>
-            <div class="task-item" id="task-4" data-prompt="When to use determinate progress bars vs skeleton loaders vs spinning indicators?">
+            <div class="task-item" id="task-4"
+              data-prompt="When to use determinate progress bars vs skeleton loaders vs spinning indicators?">
               <div class="task-item__checkbox"></div>
               <span class="task-item__label">Feedback Indicators: Skeletons vs Spinners</span>
             </div>
@@ -341,7 +361,8 @@
         <div class="suggestions" id="suggestions">
           <p class="suggestions__title">Suggested Design Topics</p>
           <div class="suggestions__chips" id="suggestion-chips">
-            <button class="chip" id="chip-hierarchy" data-prompt="Give me a 4-level information hierarchy challenge: Tab -> Filters -> Folders -> Files">
+            <button class="chip" id="chip-hierarchy"
+              data-prompt="Give me a 4-level information hierarchy challenge: Tab -> Filters -> Folders -> Files">
               <span class="material-symbols-outlined chip__icon">account_tree</span>
               <span class="chip__label">Hierarchy Flow</span>
             </button>
@@ -353,11 +374,13 @@
               <span class="material-symbols-outlined chip__icon">tab</span>
               <span class="chip__label">Tabs & Switches</span>
             </button>
-            <button class="chip" id="chip-animation" data-prompt="What animation easing curves are best for micro-interactions?">
+            <button class="chip" id="chip-animation"
+              data-prompt="What animation easing curves are best for micro-interactions?">
               <span class="material-symbols-outlined chip__icon">animation</span>
               <span class="chip__label">Animations</span>
             </button>
-            <button class="chip chip--text-only" id="chip-more" data-prompt="Give me a comprehensive MCQ test on Design System interaction rules">
+            <button class="chip chip--text-only" id="chip-more"
+              data-prompt="Give me a comprehensive MCQ test on Design System interaction rules">
               <span class="chip__label">More</span>
             </button>
           </div>
@@ -376,23 +399,28 @@
       <div class="input-bar" id="input-bar">
         <div class="input-bar__glow" aria-hidden="true"></div>
         <div class="input-bar__field-wrapper">
-          <textarea class="input-bar__field" id="screener-input" placeholder="Ask Design AI... (e.g. 'Quiz me on Modals vs Drawers' or 'Build a 4-level navigation flow')" rows="1"></textarea>
+          <textarea class="input-bar__field" id="screener-input"
+            placeholder="Ask Design AI... (e.g. 'Quiz me on Modals vs Drawers' or 'Build a 4-level navigation flow')"
+            rows="1"></textarea>
         </div>
         <div class="input-bar__actions">
           <div class="input-bar__actions-left">
-            <button class="input-bar__action-btn" id="attach-btn" aria-label="Insert interactive widget" title="Insert Chained Flow Builder">
+            <button class="input-bar__action-btn" id="attach-btn" aria-label="Insert interactive widget"
+              title="Insert Chained Flow Builder">
               <span class="material-symbols-outlined">add</span>
             </button>
-            <button class="input-bar__action-btn input-bar__action-btn--labeled" id="indepth-btn" title="Toggle Deep UX Heuristics Analysis">
+            <button class="input-bar__action-btn input-bar__action-btn--labeled" id="indepth-btn"
+              title="Toggle Deep UX Heuristics Analysis">
               <span class="material-symbols-outlined">drag_handle</span>
               <span class="input-bar__action-label">Deep UX Analysis</span>
             </button>
-            <button class="input-bar__action-btn input-bar__action-btn--labeled" id="toggle-input-btn" title="Interactive Step-by-Step Questioning Mode">
+            <button class="input-bar__action-btn input-bar__action-btn--labeled" id="toggle-input-btn"
+              title="Interactive Step-by-Step Questioning Mode">
               <span class="material-symbols-outlined">toggle_on</span>
               <span class="input-bar__action-label">Interactive Questioning Mode</span>
             </button>
           </div>
-          
+
           <div class="input-bar__actions-right">
             <!-- Progress counter shown during AI processing -->
             <div class="input-bar__progress" id="input-progress" style="display: none;">
@@ -412,4 +440,5 @@
 
   <script src="app.js"></script>
 </body>
+
 </html>
