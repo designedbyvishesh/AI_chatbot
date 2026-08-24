@@ -451,21 +451,21 @@ function createBehindTheScenesCard(btsId, prompt) {
           <div class="bts-sources-box">
             <div class="bts-source-item">
               <div class="bts-source-item__left">
-                <span class="bts-source-icon">📐</span>
+                <span class="material-symbols-outlined bts-source-icon" style="font-size:16px;">straighten</span>
                 <span class="bts-source-title">Modal vs Non-Modal Dialogs: When to interrupt user workflow</span>
               </div>
               <span class="bts-source-domain">nngroup.com</span>
             </div>
             <div class="bts-source-item">
               <div class="bts-source-item__left">
-                <span class="bts-source-icon">⚡</span>
+                <span class="material-symbols-outlined bts-source-icon" style="font-size:16px;">bolt</span>
                 <span class="bts-source-title">Fitts's & Hick's Law: Optimizing decision latency & target acquisition</span>
               </div>
               <span class="bts-source-domain">lawsofux.com</span>
             </div>
             <div class="bts-source-item">
               <div class="bts-source-item__left">
-                <span class="bts-source-icon">🎨</span>
+                <span class="material-symbols-outlined bts-source-icon" style="font-size:16px;">palette</span>
                 <span class="bts-source-title">Material Design 3: Component Elevation & Progressive Disclosure</span>
               </div>
               <span class="bts-source-domain">m3.material.io</span>
@@ -721,7 +721,7 @@ window.evaluateHierarchyFlow = async function() {
     <div class="hierarchy-critique">
       <div style="display:flex; align-items:center; justify-content:space-between;">
         <span style="font-size: 13px; font-weight: 600; color: #fff;">Information Architecture Critique & Score:</span>
-        <span class="settings-badge settings-badge--green" id="mongo-sync-badge">☁️ Syncing to MongoDB...</span>
+        <span class="settings-badge settings-badge--green" id="mongo-sync-badge">Syncing to MongoDB...</span>
       </div>
       <div class="hierarchy-critique__metrics">
         <div class="hierarchy-metric-chip">
@@ -743,8 +743,8 @@ window.evaluateHierarchyFlow = async function() {
       </div>
       <p style="font-size: 12px; color: #b8b8b8; line-height: 1.5; margin: 4px 0 0;">
         ${maxDepth >= 4 
-          ? '💡 <strong>Recommendation:</strong> When depth reaches 4+ levels (Tab ➔ Filters ➔ Folders ➔ Files), provide <em>persistent breadcrumbs</em> or an <em>in-context sliding master-detail sheet</em> to prevent disorientation.'
-          : '✅ <strong>Well Structured:</strong> The hierarchy preserves mental model continuity while minimizing context-switching penalty.'}
+          ? '<strong>Recommendation:</strong> When depth reaches 4+ levels (Tab -> Filters -> Folders -> Files), provide persistent breadcrumbs or an in-context sliding master-detail sheet to prevent disorientation.'
+          : '<strong>Status:</strong> Structure verified. The hierarchy preserves mental model continuity while minimizing context-switching penalty.'}
       </p>
     </div>
   `;
@@ -762,12 +762,12 @@ window.evaluateHierarchyFlow = async function() {
     const data = await res.json();
     const badge = document.getElementById('mongo-sync-badge');
     if (badge && data.success) {
-      badge.textContent = '☁️ Saved in MongoDB Atlas';
+      badge.textContent = 'Saved in MongoDB Atlas';
     }
   } catch (err) {
     const badge = document.getElementById('mongo-sync-badge');
     if (badge) {
-      badge.textContent = '💾 Stored locally';
+      badge.textContent = 'Stored locally';
     }
   }
 };
@@ -942,7 +942,7 @@ window.selectMCQOption = function(btn, isCorrect, explanation) {
   const feedback = document.createElement('div');
   feedback.className = `quiz-feedback-box ${isCorrect ? '' : 'quiz-feedback--error'}`;
   feedback.innerHTML = `
-    <div class="quiz-feedback-title">${isCorrect ? '✅ Spot on! Excellent Interaction Decision' : '⚠️ Sub-optimal UX Pattern'}</div>
+    <div class="quiz-feedback-title">${isCorrect ? 'Correct: Recommended Interaction Pattern' : 'Notice: Sub-optimal Interaction Pattern'}</div>
     <div class="quiz-feedback-desc">${explanation}</div>
     <button class="quiz-next-btn" onclick="triggerNextDesignChallenge()">
       <span>Next Design Challenge</span>
@@ -1010,7 +1010,7 @@ Format cleanly with Markdown headers and bullet points.`;
       renderHierarchyChallengeWidget(chatThread);
     }
   } catch (err) {
-    renderTextResponse(`⚠️ **Gemini API Notice:** ${err.message}. Falling back to Built-in UX Engine.`, chatThread);
+    renderTextResponse(`**Gemini API Notice:** ${err.message}. Falling back to Built-in UX Engine.`, chatThread);
     renderModalVsDrawerMCQWidget(chatThread);
   }
   callback();
@@ -1040,7 +1040,7 @@ async function callGroqAPI(prompt, chatThread, callback) {
     const text = data.choices?.[0]?.message?.content || 'No response from Groq.';
     renderTextResponse(text, chatThread);
   } catch (err) {
-    renderTextResponse(`⚠️ **Groq API Notice:** ${err.message}. Falling back to Built-in UX Engine.`, chatThread);
+    renderTextResponse(`**Groq API Notice:** ${err.message}. Falling back to Built-in UX Engine.`, chatThread);
     renderModalVsDrawerMCQWidget(chatThread);
   }
   callback();
