@@ -26,11 +26,14 @@ function loadSources() {
 
 /**
  * Get concatenated knowledge context for a given topic.
+ * If a userMessage is provided, picks the single most relevant file.
+ * Otherwise returns a summary from the first file.
  * 
  * @param {string} topic - Topic key (e.g., 'design-systems')
- * @returns {string} Concatenated markdown content from all knowledge files for that topic
+ * @param {string} [userMessage] - Latest user message to pick relevant knowledge
+ * @returns {string} Markdown content (capped to ~3000 chars to fit token limits)
  */
-function getContext(topic) {
+function getContext(topic, userMessage = '') {
   const sources = loadSources();
   const topicConfig = sources.topics[topic];
 
@@ -39,19 +42,78 @@ function getContext(topic) {
     return '';
   }
 
-  const chunks = [];
+  // Keyword-to-file mapping for smart selection
+  const keywordMap = {
+    'token': 'token-architecture.md',
+    'primitive': 'token-architecture.md',
+    'semantic': 'token-architecture.md',
+    'variable': 'token-architecture.md',
+    'style dictionary': 'token-architecture.md',
+    'component': 'component-api-patterns.md',
+    'prop': 'component-api-patterns.md',
+    'compound': 'component-api-patterns.md',
+    'headless': 'component-api-patterns.md',
+    'variant': 'component-api-patterns.md',
+    'radix': 'component-api-patterns.md',
+    'accessibility': 'component-api-patterns.md',
+    'aria': 'component-api-patterns.md',
+    'theme': 'theming-strategies.md',
+    'dark mode': 'theming-strategies.md',
+    'light mode': 'theming-strategies.md',
+    'brand': 'theming-strategies.md',
+    'css variable': 'theming-strategies.md',
+    'custom propert': 'theming-strategies.md',
+    'naming': 'naming-conventions.md',
+    'bem': 'naming-conventions.md',
+    'convention': 'naming-conventions.md',
+    'cti': 'naming-conventions.md',
+    'figma': 'figma-to-code.md',
+    'handoff': 'figma-to-code.md',
+    'auto layout': 'figma-to-code.md',
+    'storybook': 'figma-to-code.md',
+    'dev mode': 'figma-to-code.md',
+    'scal': 'scaling-patterns.md',
+    'monorepo': 'scaling-patterns.md',
+    'version': 'scaling-patterns.md',
+    'semver': 'scaling-patterns.md',
+    'contribut': 'scaling-patterns.md',
+    'deprecat': 'scaling-patterns.md'
+  };
 
-  for (const relPath of topicConfig.files) {
-    const filePath = path.join(KNOWLEDGE_DIR, relPath);
-    try {
-      const content = fs.readFileSync(filePath, 'utf-8');
-      chunks.push(`--- ${path.basename(relPath, '.md').replace(/-/g, ' ').toUpperCase()} ---\n${content}`);
-    } catch (err) {
-      console.warn(`[KnowledgeRetriever] Could not read ${relPath}:`, err.message);
+  // Find the best matching file
+  let targetFile = null;
+  const lower = userMessage.toLowerCase();
+
+  for (const [keyword, file] of Object.entries(keywordMap)) {
+    if (lower.includes(keyword)) {
+      targetFile = file;
+      break;
     }
   }
 
-  return chunks.join('\n\n');
+  // Pick the file to load
+  let fileToLoad;
+  if (targetFile) {
+    fileToLoad = topicConfig.files.find(f => f.endsWith(targetFile));
+  }
+  if (!fileToLoad) {
+    // Random selection to vary questions
+    const idx = Math.floor(Math.random() * topicConfig.files.length);
+    fileToLoad = topicConfig.files[idx];
+  }
+
+  const filePath = path.join(KNOWLEDGE_DIR, fileToLoad);
+  try {
+    let content = fs.readFileSync(filePath, 'utf-8');
+    // Cap at ~3000 chars to stay within Groq free tier token limits
+    if (content.length > 3000) {
+      content = content.substring(0, 3000) + '\n\n[...truncated for brevity]';
+    }
+    return `--- ${path.basename(fileToLoad, '.md').replace(/-/g, ' ').toUpperCase()} ---\n${content}`;
+  } catch (err) {
+    console.warn(`[KnowledgeRetriever] Could not read ${fileToLoad}:`, err.message);
+    return '';
+  }
 }
 
 /**
