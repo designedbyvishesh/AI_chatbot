@@ -9,8 +9,8 @@ const { buildSystemPrompt } = require('../prompts/designMentorPrompt');
 const { getContext } = require('./knowledgeRetriever');
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.3-70b-versatile';
-const MAX_TOKENS = 2048;
+const MODEL = 'qwen/qwen3.8-27b';
+const MAX_TOKENS = 1024;
 
 /**
  * Send a multi-turn conversation to Groq and get a structured response.
@@ -26,10 +26,14 @@ async function chat(conversationHistory, topic = 'design-systems') {
     throw new Error('GROQ_API_KEY is not set in environment variables. Add it to your .env file.');
   }
 
-  // 1. Retrieve relevant knowledge context
-  const knowledgeContext = getContext(topic);
+  // 1. Get the latest user message for smart knowledge selection
+  const lastUserMsg = [...conversationHistory].reverse().find(m => m.role === 'user');
+  const userMessage = lastUserMsg ? lastUserMsg.content : '';
 
-  // 2. Build the system prompt with knowledge
+  // 2. Retrieve relevant knowledge context (picks most relevant file)
+  const knowledgeContext = getContext(topic, userMessage);
+
+  // 3. Build the system prompt with knowledge
   const systemPrompt = buildSystemPrompt(knowledgeContext);
 
   // 3. Assemble messages array
