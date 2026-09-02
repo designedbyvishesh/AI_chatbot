@@ -27,7 +27,7 @@
 ## 1. Project Brief
 
 ### 1.1 One-Liner
-An **AI-powered interactive learning platform** that helps designers understand design system trends, practice interaction pattern decisions through MCQ-based quizzes, build information architectures visually, and receive real-time AI mentorship — all within a single, beautiful dark-themed interface.
+An **AI-powered interactive learning platform** that helps designers understand design system trends, practice interaction pattern decisions through MCQ-based quizzes, build information architectures visually, and receive real-time AI mentorship — all within a single platform.
 
 ### 1.2 Full Brief
 

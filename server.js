@@ -11,6 +11,7 @@ const { connectDB, getDB, closeDB } = require('./server/config/db');
 const sessionsRoutes = require('./server/routes/sessions.routes');
 const flowsRoutes = require('./server/routes/flows.routes');
 const quizzesRoutes = require('./server/routes/quizzes.routes');
+const chatRoutes = require('./server/routes/chat.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,6 +37,7 @@ app.get('/api/db-status', (req, res) => {
 app.use('/api/sessions', sessionsRoutes);
 app.use('/api/flows', flowsRoutes);
 app.use('/api/quizzes', quizzesRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.listen(PORT, () => {
   console.log(`Design AI Server running at http://localhost:${PORT}`);
