@@ -79,44 +79,64 @@ async function chat(conversationHistory, topic = 'design-systems') {
  * Falls back to a text response if JSON parsing fails.
  */
 function parseStructuredResponse(rawContent) {
-  // Try to extract JSON from the response
-  // The LLM might wrap it in backticks or add extra text
-  let jsonStr = rawContent.trim();
+  let text = rawContent.trim();
 
-  // Remove markdown code fences if present
-  if (jsonStr.startsWith('```json')) {
-    jsonStr = jsonStr.slice(7);
-  } else if (jsonStr.startsWith('```')) {
-    jsonStr = jsonStr.slice(3);
-  }
-  if (jsonStr.endsWith('```')) {
-    jsonStr = jsonStr.slice(0, -3);
-  }
-  jsonStr = jsonStr.trim();
+  // 1. Remove Qwen thinking tags (<think>...</think>)
+  text = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
 
+  // 2. Remove markdown code fences
+  if (text.startsWith('```json')) {
+    text = text.slice(7);
+  } else if (text.startsWith('```')) {
+    text = text.slice(3);
+  }
+  if (text.endsWith('```')) {
+    text = text.slice(0, -3);
+  }
+  text = text.trim();
+
+  // 3. Try direct parse first
   try {
-    const parsed = JSON.parse(jsonStr);
-
-    // Validate expected structure
+    const parsed = JSON.parse(text);
     if (parsed.type && ['question', 'evaluation', 'text'].includes(parsed.type)) {
       return parsed;
     }
-
-    // If it parsed but doesn't have the expected type, wrap it
-    return {
-      type: 'text',
-      content: rawContent,
-      references: []
-    };
   } catch (e) {
-    // JSON parsing failed — return as plain text
-    console.warn('[LLMOrchestrator] Failed to parse JSON response, returning as text');
-    return {
-      type: 'text',
-      content: rawContent,
-      references: []
-    };
+    // Continue to fallback methods
   }
+
+  // 4. Try to find JSON object anywhere in the text
+  const jsonMatch = text.match(/\{[\s\S]*"type"\s*:\s*"(question|evaluation|text)"[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (parsed.type) return parsed;
+    } catch (e) {
+      // Continue
+    }
+  }
+
+  // 5. Last resort — find the first { and last } and try parsing
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    try {
+      const parsed = JSON.parse(text.substring(firstBrace, lastBrace + 1));
+      if (parsed.type) return parsed;
+    } catch (e) {
+      // Fall through
+    }
+  }
+
+  // 6. Return as plain text
+  console.warn('[LLMOrchestrator] Could not extract JSON, returning as text');
+  // Clean up the text for display — remove any leftover thinking content
+  let cleanText = rawContent.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+  return {
+    type: 'text',
+    content: cleanText,
+    references: []
+  };
 }
 
 module.exports = { chat };
