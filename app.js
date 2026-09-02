@@ -1174,13 +1174,32 @@ function renderEvaluationCard(response, chatThread) {
 function renderTextResponse(text, chatThread) {
   const card = document.createElement('div');
   card.className = 'ai-response-card';
+
+  // Check if text is a JSON string with references
+  let content = text;
+  let refsHtml = '';
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed.content) content = parsed.content;
+    if (parsed.references && parsed.references.length > 0) {
+      refsHtml = '<div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #2f2f2f;"><div style="font-size: 11px; color: #707070; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">References</div>';
+      parsed.references.forEach(ref => {
+        refsHtml += `<div style="font-size: 12px; margin-bottom: 4px;"><a href="${escapeHtml(ref.url || '#')}" target="_blank" rel="noopener" style="color: #64B5F6; text-decoration: none;">${escapeHtml(ref.title)}</a> <span style="color: #707070;">— ${escapeHtml(ref.source || '')}</span></div>`;
+      });
+      refsHtml += '</div>';
+    }
+  } catch(e) {
+    // Not JSON, use as-is
+  }
+
   card.innerHTML = `
     <div class="ai-response-header">
       <span class="material-symbols-outlined">smart_toy</span>
-      <span>AI Design Architecture Analysis</span>
+      <span>Design Mentor</span>
     </div>
-    <div class="ai-response-body">
-      ${formatMarkdown(text)}
+    <div class="ai-response-body" style="font-size: 14px; line-height: 1.7; color: #e3e3e3;">
+      ${formatMarkdown(content)}
+      ${refsHtml}
     </div>
   `;
   chatThread.appendChild(card);
@@ -1188,13 +1207,59 @@ function renderTextResponse(text, chatThread) {
 
 function formatMarkdown(md) {
   if (!md) return '';
-  return md
-    .replace(/^### (.*$)/gim, '<h3 style="color:#fff; font-size:15px; margin:10px 0 4px;">$1</h3>')
-    .replace(/^## (.*$)/gim, '<h2 style="color:#fff; font-size:16px; margin:12px 0 6px;">$1</h2>')
-    .replace(/^# (.*$)/gim, '<h1 style="color:#fff; font-size:18px; margin:14px 0 8px;">$1</h1>')
-    .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-    .replace(/\n/gim, '<br/>');
+
+  let text = md;
+
+  // 1. Normalize escaped newlines from JSON (literal \n → actual newlines)
+  text = text.replace(/\\n/g, '\n');
+
+  // 2. Code blocks (```code```) — must come before other processing
+  text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, function(match, lang, code) {
+    return '<pre style="background: #1a1a1a; border: 1px solid #2f2f2f; border-radius: 8px; padding: 12px 16px; margin: 10px 0; overflow-x: auto; font-family: \'JetBrains Mono\', monospace; font-size: 12px; color: #a2a2a2; line-height: 1.5;">' + escapeHtml(code.trim()) + '</pre>';
+  });
+
+  // 3. Inline code (`code`)
+  text = text.replace(/`([^`]+)`/g, '<code style="background: #1a1a1a; border: 1px solid #2f2f2f; border-radius: 4px; padding: 2px 6px; font-family: \'JetBrains Mono\', monospace; font-size: 12px; color: #81c784;">$1</code>');
+
+  // 4. Headers (process line by line)
+  text = text.replace(/^#### (.+)$/gm, '<h4 style="color: #e3e3e3; font-size: 14px; font-weight: 600; margin: 14px 0 6px;">$1</h4>');
+  text = text.replace(/^### (.+)$/gm, '<h3 style="color: #fff; font-size: 15px; font-weight: 600; margin: 16px 0 6px;">$1</h3>');
+  text = text.replace(/^## (.+)$/gm, '<h2 style="color: #fff; font-size: 17px; font-weight: 600; margin: 20px 0 8px;">$1</h2>');
+  text = text.replace(/^# (.+)$/gm, '<h1 style="color: #fff; font-size: 19px; font-weight: 700; margin: 22px 0 10px;">$1</h1>');
+
+  // 5. Bold and italic
+  text = text.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong style="color: #fff;">$1</strong>');
+  text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  // 6. Bullet points (- item or * item)
+  text = text.replace(/^[\-\*] (.+)$/gm, '<li style="margin-bottom: 4px; padding-left: 4px;">$1</li>');
+  // Wrap consecutive <li> items in <ul>
+  text = text.replace(/((?:<li[^>]*>.*?<\/li>\s*)+)/g, '<ul style="margin: 8px 0; padding-left: 20px; list-style-type: disc;">$1</ul>');
+
+  // 7. Numbered lists (1. item, 2. item)
+  text = text.replace(/^\d+\. (.+)$/gm, '<li style="margin-bottom: 4px; padding-left: 4px;">$1</li>');
+
+  // 8. Horizontal rules
+  text = text.replace(/^---+$/gm, '<hr style="border: none; border-top: 1px solid #2f2f2f; margin: 16px 0;">');
+
+  // 9. Links [text](url)
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color: #64B5F6; text-decoration: none;">$1</a>');
+
+  // 10. Paragraphs — double newlines become paragraph breaks
+  text = text.replace(/\n\n+/g, '</p><p style="margin: 10px 0;">');
+
+  // 11. Single newlines (that aren't already handled) become <br>
+  text = text.replace(/\n/g, '<br>');
+
+  // 12. Wrap in paragraph tags
+  text = '<p style="margin: 0 0 10px 0;">' + text + '</p>';
+
+  // 13. Clean up empty paragraphs
+  text = text.replace(/<p[^>]*>\s*<\/p>/g, '');
+  text = text.replace(/<p[^>]*>\s*<br>\s*<\/p>/g, '');
+
+  return text;
 }
 
 function escapeHtml(str) {
