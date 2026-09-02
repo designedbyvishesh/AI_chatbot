@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "topics": {
+    "design-systems": {
+      "label": "Design Systems",
+      "files": [
+        "design-systems/token-architecture.md",
+        "design-systems/component-api-patterns.md",
+        "design-systems/theming-strategies.md",
+        "design-systems/naming-conventions.md",
+        "design-systems/figma-to-code.md",
+        "design-systems/scaling-patterns.md"
+      ]
+    }
+  }
+}

@@ -247,60 +247,36 @@
 
         <div class="settings-modal__body">
           <p class="settings-modal__desc">
-            Choose your AI execution mode. You can use our <strong>Built-in Offline Master Engine</strong> for zero-cost
-            instant answers, or link free API keys for unlimited live reasoning.
+            Choose your AI execution mode. <strong>Groq AI</strong> uses the server-side Llama 3.3 70B model for
+            intelligent, multi-turn design mentorship. The <strong>Built-in Engine</strong> works offline with pre-built quizzes.
           </p>
 
           <div class="settings-provider-group">
-            <label class="settings-provider-card settings-provider-card--active" id="card-mode-builtin">
-              <input type="radio" name="ai-engine-mode" value="builtin" checked />
+            <label class="settings-provider-card" id="card-mode-groq">
+              <input type="radio" name="ai-engine-mode" value="groq" checked />
+              <div class="settings-provider-card__content">
+                <div class="settings-provider-card__title-row">
+                  <span class="settings-provider-name">Groq AI (Llama 3.3 70B)</span>
+                  <span class="settings-badge settings-badge--green">Recommended</span>
+                </div>
+                <p class="settings-provider-detail">
+                  Multi-turn conversational design mentor powered by Groq LPU. Asks scenario-based questions,
+                  evaluates your answers, and cites real design references. API key is configured server-side.
+                </p>
+              </div>
+            </label>
+
+            <label class="settings-provider-card" id="card-mode-builtin">
+              <input type="radio" name="ai-engine-mode" value="builtin" />
               <div class="settings-provider-card__content">
                 <div class="settings-provider-card__title-row">
                   <span class="settings-provider-name">Built-in UX Master Engine</span>
-                  <span class="settings-badge settings-badge--green">Unlimited / Instant / Free</span>
+                  <span class="settings-badge">Offline / Instant</span>
                 </div>
                 <p class="settings-provider-detail">
-                  Zero setup, offline capable. Includes 100+ design system heuristics, interactive flow evaluation, and
-                  MCQ generators.
+                  Zero setup, offline capable. Includes pre-built interactive quizzes and flow evaluation.
+                  No AI-generated questions — uses hardcoded design challenges.
                 </p>
-              </div>
-            </label>
-
-            <label class="settings-provider-card" id="card-mode-gemini">
-              <input type="radio" name="ai-engine-mode" value="gemini" />
-              <div class="settings-provider-card__content">
-                <div class="settings-provider-card__title-row">
-                  <span class="settings-provider-name">Google Gemini 2.0 Flash</span>
-                  <span class="settings-badge">1,500 Free Requests/Day</span>
-                </div>
-                <p class="settings-provider-detail">
-                  Fast live reasoning from Google AI Studio. 1M token window with generous free tier.
-                </p>
-                <div class="settings-key-input-box" id="gemini-key-box" style="display: none;">
-                  <input type="password" id="gemini-api-key" placeholder="Enter Gemini API Key (AIzaSy...)"
-                    class="settings-input" />
-                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener"
-                    class="settings-key-link">Get Free Key ↗</a>
-                </div>
-              </div>
-            </label>
-
-            <label class="settings-provider-card" id="card-mode-groq">
-              <input type="radio" name="ai-engine-mode" value="groq" />
-              <div class="settings-provider-card__content">
-                <div class="settings-provider-card__title-row">
-                  <span class="settings-provider-name">Groq / OpenRouter (Llama 3.3 70B)</span>
-                  <span class="settings-badge">Ultra-Fast Free Tier</span>
-                </div>
-                <p class="settings-provider-detail">
-                  Sub-second streaming token generation on high-speed LPU hardware.
-                </p>
-                <div class="settings-key-input-box" id="groq-key-box" style="display: none;">
-                  <input type="password" id="groq-api-key" placeholder="Enter Groq API Key (gsk_...)"
-                    class="settings-input" />
-                  <a href="https://console.groq.com/keys" target="_blank" rel="noopener" class="settings-key-link">Get
-                    Free Key ↗</a>
-                </div>
               </div>
             </label>
           </div>

@@ -10,11 +10,13 @@ let isQuestioningMode = true;
 let activeSessionId = null;
 let allSessions = JSON.parse(localStorage.getItem('design_chat_sessions') || '[]');
 
-// Settings & Provider Configuration
+// Multi-turn conversation history
+let conversationHistory = [];
+let currentTopic = 'design-systems';
+
+// Settings & Provider Configuration (API keys now live server-side in .env)
 let aiConfig = {
-  mode: localStorage.getItem('ai_mode') || 'builtin',
-  geminiKey: localStorage.getItem('gemini_api_key') || '',
-  groqKey: localStorage.getItem('groq_api_key') || ''
+  mode: localStorage.getItem('ai_mode') || 'groq'
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -175,8 +177,7 @@ function formatTimeAgo(isoString) {
 }
 
 function getActiveModelName() {
-  if (aiConfig.mode === 'gemini') return 'Gemini 2.0';
-  if (aiConfig.mode === 'groq') return 'Groq LPU';
+  if (aiConfig.mode === 'groq') return 'Groq Llama 3.3';
   return 'UX Master';
 }
 
@@ -543,17 +544,13 @@ function runDesignSystemReasoning(btsId, prompt, onComplete) {
 function renderAIResponse(promptText, chatThread, callback) {
   const lower = promptText.toLowerCase();
 
-  // If live API key configured and mode is Gemini/Groq
-  if (aiConfig.mode === 'gemini' && aiConfig.geminiKey) {
-    callGeminiAPI(promptText, chatThread, callback);
-    return;
-  }
-  if (aiConfig.mode === 'groq' && aiConfig.groqKey) {
-    callGroqAPI(promptText, chatThread, callback);
+  // Server-side Groq AI mode (multi-turn conversational)
+  if (aiConfig.mode === 'groq') {
+    callServerChat(promptText, chatThread, callback);
     return;
   }
 
-  // Built-in UX Master Engine
+  // Built-in UX Master Engine (offline fallback)
   setTimeout(() => {
     if (lower.includes('hierarchy') || lower.includes('level') || lower.includes('flow') || lower.includes('filter') || lower.includes('folder')) {
       renderHierarchyChallengeWidget(chatThread);
@@ -980,72 +977,200 @@ window.triggerNextDesignChallenge = function() {
 /* ═══════════════════════════════════════════════
    LIVE AI PROVIDER CALLS (Gemini / Groq)
    ═══════════════════════════════════════════════ */
-async function callGeminiAPI(prompt, chatThread, callback) {
-  const apiKey = aiConfig.geminiKey;
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-  const systemInstruction = `You are a world-class Interaction Design Architect and Design System Master.
-When answering user design questions, always explain:
-1. When to use which interaction component (Modals vs Drawers vs Popovers vs Tabs vs Indicators vs Micro-animations).
-2. Cognitive load (Fitts's Law, Hick's Law, Miller's 7±2, Progressive Disclosure).
-3. If relevant, output a structured questionnaire or interactive hierarchy step breakdown.
-Format cleanly with Markdown headers and bullet points.`;
+/* ═══════════════════════════════════════════════
+   SERVER-SIDE CONVERSATIONAL AI (via /api/chat)
+   ═══════════════════════════════════════════════ */
+async function callServerChat(prompt, chatThread, callback) {
+  // Append user message to conversation history
+  conversationHistory.push({ role: 'user', content: prompt });
 
   try {
-    const res = await fetch(endpoint, {
+    const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [
-          { role: 'user', parts: [{ text: `${systemInstruction}\n\nUser Question: ${prompt}` }] }
-        ]
+        conversationHistory: conversationHistory,
+        topic: currentTopic
       })
     });
 
     const data = await res.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini.';
 
-    renderTextResponse(text, chatThread);
-    if (prompt.toLowerCase().includes('hierarchy') || prompt.toLowerCase().includes('flow')) {
-      renderHierarchyChallengeWidget(chatThread);
+    if (!data.success) {
+      throw new Error(data.error || 'Server returned an error');
     }
+
+    const response = data.response;
+
+    // Append assistant response to conversation history
+    conversationHistory.push({ role: 'assistant', content: JSON.stringify(response) });
+
+    // Cap conversation history at 30 messages
+    if (conversationHistory.length > 30) {
+      conversationHistory = conversationHistory.slice(-30);
+    }
+
+    // Render based on response type
+    if (response.type === 'question') {
+      renderDynamicQuizCard(response, chatThread);
+    } else if (response.type === 'evaluation') {
+      renderEvaluationCard(response, chatThread);
+    } else {
+      renderTextResponse(response.content || JSON.stringify(response), chatThread);
+    }
+
   } catch (err) {
-    renderTextResponse(`**Gemini API Notice:** ${err.message}. Falling back to Built-in UX Engine.`, chatThread);
-    renderModalVsDrawerMCQWidget(chatThread);
+    console.error('[Chat] Server error:', err);
+    renderTextResponse(
+      `**Server Notice:** ${err.message}. Make sure the server is running and GROQ_API_KEY is set in .env.`,
+      chatThread
+    );
   }
   callback();
 }
 
-async function callGroqAPI(prompt, chatThread, callback) {
-  const apiKey = aiConfig.groqKey;
-  const endpoint = `https://api.groq.com/openai/v1/chat/completions`;
+/* ─── Dynamic Quiz Card (from LLM JSON) ─── */
+function renderDynamicQuizCard(response, chatThread) {
+  const cardId = 'dynamic-quiz-' + Date.now();
+  const card = document.createElement('div');
+  card.className = 'ai-response-card';
 
-  try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: 'You are a Senior UX & Interaction Design Architect specializing in Design Systems, hierarchy, modals, tabs, and micro-motion.' },
-          { role: 'user', content: prompt }
-        ]
-      })
+  const difficultyColors = {
+    beginner: '#4caf50',
+    intermediate: '#ff9800',
+    advanced: '#f44336'
+  };
+  const diffColor = difficultyColors[response.difficulty] || '#a2a2a2';
+
+  let optionsHtml = '';
+  response.options.forEach(opt => {
+    optionsHtml += `
+      <button class="quiz-option-btn" onclick="handleDynamicQuizAnswer(this, ${opt.isCorrect}, '${opt.id}', '${escapeHtml(opt.text)}')"
+        data-card-id="${cardId}" data-option-id="${opt.id}">
+        <span class="quiz-option-btn__radio"></span>
+        <span class="quiz-option-btn__text"><strong>${opt.id}.</strong> ${escapeHtml(opt.text)}</span>
+      </button>`;
+  });
+
+  card.innerHTML = `
+    <div class="ai-response-header">
+      <span class="material-symbols-outlined">quiz</span>
+      <span>${escapeHtml(response.topic || 'Design Systems')}</span>
+    </div>
+    <div class="quiz-card" id="${cardId}">
+      <div class="quiz-card__badge" style="border-left: 3px solid ${diffColor}; padding-left: 8px;">
+        ${escapeHtml(response.topic || 'Design Systems')} <span style="color: ${diffColor}; margin-left: 8px; font-size: 11px; text-transform: uppercase;">${response.difficulty || ''}</span>
+      </div>
+      <div class="quiz-card__question">
+        ${escapeHtml(response.question)}
+      </div>
+      <div class="quiz-options-list">
+        ${optionsHtml}
+      </div>
+      ${response.hint ? `<div style="margin-top: 10px; padding: 8px 12px; background: rgba(255,152,0,0.08); border-radius: 8px; font-size: 12px; color: #a2a2a2;"><span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle; margin-right: 4px;">lightbulb</span> ${escapeHtml(response.hint)}</div>` : ''}
+    </div>
+  `;
+
+  chatThread.appendChild(card);
+  const chatSection = document.getElementById('chat-section');
+  if (chatSection) chatSection.scrollTop = chatSection.scrollHeight;
+}
+
+/* ─── Handle Dynamic Quiz Answer ─── */
+window.handleDynamicQuizAnswer = function(btn, isCorrect, optionId, optionText) {
+  const cardId = btn.getAttribute('data-card-id');
+  const allBtns = document.querySelectorAll(`[data-card-id="${cardId}"]`);
+
+  // Disable all options
+  allBtns.forEach(b => {
+    b.disabled = true;
+    b.style.pointerEvents = 'none';
+    b.style.opacity = '0.6';
+  });
+
+  // Highlight selected
+  if (isCorrect) {
+    btn.style.borderColor = '#4caf50';
+    btn.style.background = 'rgba(76, 175, 80, 0.1)';
+    btn.style.opacity = '1';
+  } else {
+    btn.style.borderColor = '#ef5350';
+    btn.style.background = 'rgba(239, 83, 80, 0.1)';
+    btn.style.opacity = '1';
+
+    // Highlight correct one
+    allBtns.forEach(b => {
+      const bId = b.getAttribute('data-option-id');
+      // Find the correct option by checking if it was marked correct
+      if (b !== btn) {
+        // We need to check from the original data — use a simpler approach
+      }
     });
-
-    const data = await res.json();
-    const text = data.choices?.[0]?.message?.content || 'No response from Groq.';
-    renderTextResponse(text, chatThread);
-  } catch (err) {
-    renderTextResponse(`**Groq API Notice:** ${err.message}. Falling back to Built-in UX Engine.`, chatThread);
-    renderModalVsDrawerMCQWidget(chatThread);
   }
-  callback();
+
+  // Send the answer back to the AI for evaluation
+  const answerText = `I choose ${optionId}: ${optionText}`;
+  sendPrompt(answerText, false);
+};
+
+/* ─── Evaluation Card (from LLM JSON) ─── */
+function renderEvaluationCard(response, chatThread) {
+  const card = document.createElement('div');
+  card.className = 'ai-response-card';
+
+  const statusIcon = response.isCorrect ? 'check_circle' : 'cancel';
+  const statusColor = response.isCorrect ? '#4caf50' : '#ef5350';
+  const statusText = response.isCorrect ? 'Correct!' : 'Not quite right';
+
+  let refsHtml = '';
+  if (response.references && response.references.length > 0) {
+    refsHtml = '<div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #2f2f2f;"><div style="font-size: 11px; color: #707070; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">References</div>';
+    response.references.forEach(ref => {
+      refsHtml += `<div style="font-size: 12px; margin-bottom: 4px;"><a href="${escapeHtml(ref.url || '#')}" target="_blank" rel="noopener" style="color: #64B5F6; text-decoration: none;">${escapeHtml(ref.title)}</a> <span style="color: #707070;">— ${escapeHtml(ref.source || '')}</span></div>`;
+    });
+    refsHtml += '</div>';
+  }
+
+  let whyWrongHtml = '';
+  if (response.whyOthersWrong) {
+    whyWrongHtml = '<div style="margin-top: 12px;"><div style="font-size: 11px; color: #707070; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Option Breakdown</div>';
+    for (const [key, reason] of Object.entries(response.whyOthersWrong)) {
+      whyWrongHtml += `<div style="font-size: 12px; margin-bottom: 4px; padding: 4px 8px; background: rgba(255,255,255,0.03); border-radius: 4px;"><strong style="color: #e3e3e3;">${key}:</strong> <span style="color: #a2a2a2;">${escapeHtml(reason)}</span></div>`;
+    }
+    whyWrongHtml += '</div>';
+  }
+
+  card.innerHTML = `
+    <div class="ai-response-header" style="border-bottom: 2px solid ${statusColor};">
+      <span class="material-symbols-outlined" style="color: ${statusColor};">${statusIcon}</span>
+      <span style="color: ${statusColor}; font-weight: 600;">${statusText}</span>
+    </div>
+    <div class="ai-response-body">
+      <div style="font-size: 14px; line-height: 1.6; color: #e3e3e3; margin-bottom: 12px;">
+        ${formatMarkdown(response.feedback || '')}
+      </div>
+      ${response.deepDive ? `
+      <div style="margin-top: 12px; padding: 12px; background: rgba(100, 181, 246, 0.06); border-left: 3px solid #64B5F6; border-radius: 6px;">
+        <div style="font-size: 11px; color: #64B5F6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Deep Dive</div>
+        <div style="font-size: 13px; line-height: 1.5; color: #a2a2a2;">${formatMarkdown(response.deepDive)}</div>
+      </div>` : ''}
+      ${whyWrongHtml}
+      ${refsHtml}
+      <div style="margin-top: 16px; text-align: center;">
+        <button class="quiz-option-btn" onclick="sendPrompt('Next question please', false)" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); cursor: pointer;">
+          <span class="material-symbols-outlined" style="font-size: 16px;">arrow_forward</span>
+          <span>Next Question</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  chatThread.appendChild(card);
+  const chatSection = document.getElementById('chat-section');
+  if (chatSection) chatSection.scrollTop = chatSection.scrollHeight;
 }
 
+/* ─── Plain Text Response Card ─── */
 function renderTextResponse(text, chatThread) {
   const card = document.createElement('div');
   card.className = 'ai-response-card';
@@ -1073,7 +1198,8 @@ function formatMarkdown(md) {
 }
 
 function escapeHtml(str) {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  if (!str) return '';
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
 }
 
 /* ═══════════════════════════════════════════════
@@ -1086,14 +1212,6 @@ function initSettingsModal() {
   const closeBtn = document.getElementById('settings-modal-close');
   const cancelBtn = document.getElementById('settings-cancel-btn');
   const saveBtn = document.getElementById('settings-save-btn');
-
-  const geminiInput = document.getElementById('gemini-api-key');
-  const groqInput = document.getElementById('groq-api-key');
-  const geminiBox = document.getElementById('gemini-key-box');
-  const groqBox = document.getElementById('groq-key-box');
-
-  if (geminiInput) geminiInput.value = aiConfig.geminiKey;
-  if (groqInput) groqInput.value = aiConfig.groqKey;
 
   function openModal() {
     if (!modal) return;
@@ -1116,9 +1234,6 @@ function initSettingsModal() {
         else card.classList.remove('settings-provider-card--active');
       }
     });
-
-    if (geminiBox) geminiBox.style.display = aiConfig.mode === 'gemini' ? 'flex' : 'none';
-    if (groqBox) groqBox.style.display = aiConfig.mode === 'groq' ? 'flex' : 'none';
   }
 
   document.querySelectorAll('input[name="ai-engine-mode"]').forEach(radio => {
@@ -1138,12 +1253,10 @@ function initSettingsModal() {
 
   if (saveBtn) {
     saveBtn.addEventListener('click', () => {
-      aiConfig.geminiKey = geminiInput ? geminiInput.value.trim() : '';
-      aiConfig.groqKey = groqInput ? groqInput.value.trim() : '';
-
       localStorage.setItem('ai_mode', aiConfig.mode);
-      localStorage.setItem('gemini_api_key', aiConfig.geminiKey);
-      localStorage.setItem('groq_api_key', aiConfig.groqKey);
+
+      // Reset conversation history when switching modes
+      conversationHistory = [];
 
       closeModal();
     });
@@ -1159,6 +1272,7 @@ function initSettingsModal() {
 function resetToMorningTasks() {
   stopProcessing();
   activeSessionId = null;
+  conversationHistory = []; // Clear conversation on new chat
   renderSessionList();
 
   const tasksSection = document.getElementById('tasks-section');
