@@ -103,7 +103,7 @@
   border: none;
   color: #00E676;
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 6px;
@@ -135,7 +135,7 @@
   justify-content: center;
 }
 
-/* Rotating Outer Ring (0.4 rps = 2.5s rotation) */
+/* Rotating Outer Ring (0.1 rps = 10s rotation) */
 .recorder-widget__outer-ring {
   position: absolute;
   width: 120px;
@@ -157,7 +157,7 @@
 }
 
 .recorder-widget__ring-tick--1 {
-  transform: translate(-50%, -50%) rotate(-60deg) translate(58px, 0);
+  transform: translate(-50%, -50%) rotate(-120deg) translate(58px, 0);
 }
 
 .recorder-widget__ring-tick--2 {
@@ -168,7 +168,7 @@
   transform: translate(-50%, -50%) rotate(120deg) translate(58px, 0);
 }
 
-/* CSS Keyframe Animation for 0.4 rps (2.5 seconds per turn) */
+/* CSS Keyframe Animation for 0.1 rps (10 seconds per turn) */
 @keyframes spinRing {
   from {
     transform: rotate(0deg);
@@ -179,7 +179,7 @@
 }
 
 .recorder-widget__outer-ring.is-rotating {
-  animation: spinRing 2.5s linear infinite;
+  animation: spinRing 10s linear infinite;
 }
 
 /* Inner Green Solid Circle Toggle Button */

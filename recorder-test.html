@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Recording & Timer Component Demo</title>
+  <title>Recording & Timer Component</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -25,100 +25,22 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       min-height: 100vh;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 40px 20px;
-    }
-
-    .demo-header {
-      text-align: center;
-      max-width: 680px;
-      margin-bottom: 32px;
-    }
-
-    .demo-header__badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      border-radius: 20px;
-      background: rgba(0, 230, 118, 0.12);
-      border: 1px solid rgba(0, 230, 118, 0.3);
-      color: #00E676;
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 12px;
-    }
-
-    .demo-header__title {
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      margin-bottom: 8px;
-    }
-
-    .demo-header__desc {
-      font-size: 14px;
-      color: #94a3b8;
-      line-height: 1.5;
+      padding: 20px;
     }
 
     .demo-container {
-      margin-bottom: 32px;
-    }
-
-    /* Output Console Log */
-    .demo-console {
       width: 680px;
       max-width: 100%;
-      background: #000000;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      padding: 16px 20px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      color: #00E676;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    }
-
-    .demo-console__title {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #64748b;
-      margin-bottom: 8px;
-    }
-
-    .demo-console__output {
-      white-space: pre-wrap;
-      word-break: break-all;
-      line-height: 1.6;
     }
   </style>
 </head>
 <body>
 
-  <header class="demo-header">
-    <div class="demo-header__badge">
-      <span class="material-symbols-outlined" style="font-size: 16px;">graphic_eq</span>
-      <span>Standalone Feature Demo</span>
-    </div>
-    <h1 class="demo-header__title">Audio Recorder & Dual-Timer Widget</h1>
-    <p class="demo-header__desc">
-      Combines real-time audio waveform capture with a preset countdown timer (- MM:SS) and overtime count-up (+ MM:SS). Prepares audio payload for Agile Whiteboard session storage.
-    </p>
-  </header>
-
   <!-- Widget Container Target -->
   <div class="demo-container">
     <div id="recorder-container"></div>
-  </div>
-
-  <!-- Event Log Console -->
-  <div class="demo-console">
-    <div class="demo-console__title">System Activity Log</div>
-    <div class="demo-console__output" id="console-log">Ready. Click green circle to start recording.</div>
   </div>
 
   <!-- Include RecordingTimer JS Script -->
@@ -126,21 +48,12 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const consoleLog = document.getElementById('console-log');
-
-      function logMessage(msg) {
-        const timestamp = new Date().toLocaleTimeString();
-        consoleLog.textContent = `[${timestamp}] ${msg}`;
-      }
-
       // Initialize the RecordingTimer component
       const recorder = new RecordingTimer('#recorder-container', {
         onSave: (payload) => {
-          logMessage(`SAVED RECORDING!\n• Duration: ${payload.durationSeconds} seconds (${payload.formattedTime})\n• Blob Size: ${payload.blob ? payload.blob.size + ' bytes' : 'N/A (Synthetic)'}\n• Timestamp: ${payload.timestamp}`);
+          console.log('Saved Recording Payload:', payload);
         }
       });
-
-      logMessage('RecordingTimer initialized. Select preset (30m, 45m, 60m, 90m) or press green button to start.');
     });
   </script>
 </body>

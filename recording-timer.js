@@ -27,6 +27,7 @@ class RecordingTimer {
     this.selectedPresetMinutes = 45; // Default 45 min
     this.remainingSeconds = 45 * 60;
     this.elapsedSeconds = 0;
+    this.elapsedSecondsFloat = 0.0;
     this.timerInterval = null;
 
     // Audio & Waveform properties
@@ -42,9 +43,8 @@ class RecordingTimer {
     this.canvas = null;
     this.ctx = null;
     this.animationFrameId = null;
-    this.waveformHistory = []; // Array of normalized amplitude values (0.0 - 1.0)
-    this.maxBars = 100;
-    this.rulerOffset = 0; // Pixels offset for scrolling timeline ruler
+    this.waveformHistory = []; // Array of { time, amp }
+    this.lastSampleTime = 0;
 
     this.init();
   }
@@ -174,9 +174,14 @@ class RecordingTimer {
     this.ctx = this.canvas.getContext('2d');
     this.resizeCanvas();
 
-    // Pre-fill history buffer with minimal baseline heights
-    for (let i = 0; i < this.maxBars; i++) {
-      this.waveformHistory.push(0.05 + Math.sin(i * 0.2) * 0.02);
+    // Pre-fill history buffer with baseline amplitude bars
+    this.waveformHistory = [];
+    for (let i = 0; i < 40; i++) {
+      const time = -(40 - i) * 0.05;
+      this.waveformHistory.push({
+        time: time,
+        amp: 0.05 + Math.sin(i * 0.3) * 0.02
+      });
     }
 
     this.renderCanvas();
@@ -193,7 +198,13 @@ class RecordingTimer {
    * Main Canvas render loop (Right-to-Left scrolling)
    */
   renderCanvas() {
-    const draw = () => {
+    let lastTime = performance.now();
+
+    const draw = (now) => {
+      const currentTime = now || performance.now();
+      const dt = Math.min(0.1, (currentTime - lastTime) / 1000);
+      lastTime = currentTime;
+
       const width = this.canvas.width;
       const height = this.canvas.height;
       const dpr = window.devicePixelRatio || 1;
@@ -208,53 +219,62 @@ class RecordingTimer {
       const waveformAreaHeight = height - rulerHeight;
       const centerY = waveformAreaHeight / 2;
 
-      // Draw Waveform Bars (moving right to left)
-      const barWidth = 3 * dpr;
-      const barGap = 4 * dpr;
-      const totalBarSpace = barWidth + barGap;
-      const numVisibleBars = Math.floor(width / totalBarSpace);
-
-      // Fetch audio sample if actively recording
-      if (this.state === 'recording') {
-        const amplitude = this.getAudioAmplitude();
-        this.waveformHistory.push(amplitude);
-        if (this.waveformHistory.length > 200) {
-          this.waveformHistory.shift();
-        }
-        this.rulerOffset += 0.4 * dpr;
-      }
-
-      // Draw bars right-to-left starting from right edge
+      // Speed: Pixels per second (matching waveform & timeline ruler)
+      const pixelsPerSecond = 55 * dpr;
       const rightX = width - (8 * dpr);
-      const historyLen = this.waveformHistory.length;
+      const barWidth = 3 * dpr;
 
-      for (let i = 0; i < numVisibleBars; i++) {
-        const historyIdx = historyLen - 1 - i;
-        if (historyIdx < 0) break;
+      // Update elapsed time & capture audio sample if recording
+      if (this.state === 'recording') {
+        this.elapsedSecondsFloat += dt;
+        this.elapsedSeconds = Math.floor(this.elapsedSecondsFloat);
 
-        const amp = this.waveformHistory[historyIdx] || 0.04;
-        const barH = Math.max(4 * dpr, amp * (waveformAreaHeight * 0.75));
-
-        const x = rightX - (i * totalBarSpace);
-
-        // Draw vertical bar centered around centerY
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-        this.ctx.fillRect(x - barWidth, centerY - (barH / 2), barWidth, barH);
+        // Sample audio amplitude every 40ms (~25 samples/sec)
+        if (currentTime - this.lastSampleTime > 40) {
+          const amp = this.getAudioAmplitude();
+          this.waveformHistory.push({ time: this.elapsedSecondsFloat, amp: amp });
+          this.lastSampleTime = currentTime;
+        }
       }
 
-      // Draw Bottom Timeline Ruler (Ticks & Labels)
-      this.drawTimelineRuler(width, height, waveformAreaHeight, rulerHeight, dpr);
+      // Prune old samples that are off the left edge of canvas
+      while (this.waveformHistory.length > 0) {
+        const first = this.waveformHistory[0];
+        const firstX = rightX - (this.elapsedSecondsFloat - first.time) * pixelsPerSecond;
+        if (firstX < -50 * dpr) {
+          this.waveformHistory.shift();
+        } else {
+          break;
+        }
+      }
+
+      // Draw Waveform Bars (moving right to left in sync with timeline ruler)
+      for (let i = 0; i < this.waveformHistory.length; i++) {
+        const item = this.waveformHistory[i];
+        const x = rightX - (this.elapsedSecondsFloat - item.time) * pixelsPerSecond;
+
+        if (x >= -20 * dpr && x <= rightX + 10 * dpr) {
+          const amp = item.amp || 0.04;
+          const barH = Math.max(4 * dpr, amp * (waveformAreaHeight * 0.75));
+
+          this.ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+          this.ctx.fillRect(x - (barWidth / 2), centerY - (barH / 2), barWidth, barH);
+        }
+      }
+
+      // Draw Bottom Timeline Ruler (00:00, 00:01, 00:02... moving right to left)
+      this.drawTimelineRuler(width, height, waveformAreaHeight, rulerHeight, dpr, pixelsPerSecond, rightX);
 
       this.animationFrameId = requestAnimationFrame(draw);
     };
 
-    draw();
+    this.animationFrameId = requestAnimationFrame(draw);
   }
 
   /**
    * Draw scrolling timeline ruler at bottom of canvas
    */
-  drawTimelineRuler(width, height, waveformAreaHeight, rulerHeight, dpr) {
+  drawTimelineRuler(width, height, waveformAreaHeight, rulerHeight, dpr, pixelsPerSecond, rightX) {
     const ctx = this.ctx;
     const rulerY = waveformAreaHeight;
 
@@ -266,26 +286,39 @@ class RecordingTimer {
     ctx.lineTo(width, rulerY);
     ctx.stroke();
 
-    // Ruler Ticks
-    const tickInterval = 50 * dpr;
-    const startX = (width - (this.rulerOffset % tickInterval));
-
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
     ctx.font = `${11 * dpr}px 'JetBrains Mono', 'Inter', monospace`;
     ctx.textAlign = 'center';
 
-    let secCounter = Math.floor(this.elapsedSeconds);
+    // Calculate integer second range visible on screen
+    const minSec = Math.max(0, Math.floor(this.elapsedSecondsFloat - (rightX / pixelsPerSecond) - 1));
+    const maxSec = Math.ceil(this.elapsedSecondsFloat + 1);
 
-    for (let x = startX; x > -tickInterval; x -= tickInterval) {
-      // Small tick mark
-      ctx.fillRect(x, rulerY, 1 * dpr, 6 * dpr);
+    for (let sec = minSec; sec <= maxSec; sec++) {
+      const mainX = rightX - (this.elapsedSecondsFloat - sec) * pixelsPerSecond;
 
-      // Label timestamp every 100px
-      const displaySec = Math.max(0, secCounter % 60);
-      const formattedSec = displaySec < 10 ? `00:0${displaySec}` : `00:${displaySec}`;
-      ctx.fillText(formattedSec, x, rulerY + (20 * dpr));
+      if (mainX >= -40 * dpr && mainX <= width + 40 * dpr) {
+        // Main second tick mark
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.fillRect(mainX - (0.75 * dpr), rulerY, 1.5 * dpr, 7 * dpr);
 
-      secCounter = Math.max(0, secCounter - 2);
+        // Label timestamp: MM:SS (e.g. 00:00, 00:01, 00:02...)
+        const mins = Math.floor(sec / 60);
+        const secs = sec % 60;
+        const formatted = `${mins < 10 ? '0' + mins : mins}:${secs < 10 ? '0' + secs : secs}`;
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+        ctx.fillText(formatted, mainX, rulerY + (22 * dpr));
+
+        // Draw 4 minor sub-ticks between second marks
+        for (let sub = 1; sub < 5; sub++) {
+          const subTime = sec + (sub * 0.2);
+          const subX = rightX - (this.elapsedSecondsFloat - subTime) * pixelsPerSecond;
+          if (subX >= 0 && subX <= rightX) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.fillRect(subX - (0.5 * dpr), rulerY, 1 * dpr, 4 * dpr);
+          }
+        }
+      }
     }
   }
 
@@ -509,7 +542,10 @@ class RecordingTimer {
   resetToIdle() {
     this.state = 'idle';
     this.elapsedSeconds = 0;
+    this.elapsedSecondsFloat = 0.0;
     this.remainingSeconds = this.selectedPresetMinutes * 60;
+
+    this.initCanvas();
 
     this.dom.outerRing.classList.remove('is-rotating');
     this.dom.presetsGrid.classList.remove('is-hidden');
