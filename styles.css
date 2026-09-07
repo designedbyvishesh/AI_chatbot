@@ -185,6 +185,172 @@ textarea {
 }
 
 /* ═══════════════════════════════════════════════
+   MODE SWITCHER (Quiz / Agile) — Figma Component 1
+   ═══════════════════════════════════════════════ */
+.mode-switcher {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: #1a1a1a;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 3px 4px 3px 3px;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  height: 30px;
+}
+
+.mode-switcher:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.mode-switcher__active {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #f0f0f0;
+  color: #1a1a1a;
+  border-radius: var(--radius-pill);
+  padding: 3px 10px 3px 7px;
+  height: 24px;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.mode-switcher__active:hover {
+  background: #ffffff;
+}
+
+.mode-switcher__active:active {
+  transform: scale(0.97);
+}
+
+.mode-switcher__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.mode-switcher__icon svg {
+  display: block;
+}
+
+.mode-switcher__label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.mode-switcher__controls {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 2px;
+}
+
+.mode-switcher__dots {
+  font-size: 14px !important;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+
+.mode-switcher__clock {
+  font-size: 14px !important;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+
+.mode-switcher:hover .mode-switcher__dots,
+.mode-switcher:hover .mode-switcher__clock {
+  color: var(--text-secondary);
+}
+
+/* ── Dropdown ── */
+.mode-switcher__dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 200px;
+  background: #1e1e1e;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  box-shadow: var(--shadow-floating);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px) scale(0.96);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+  z-index: 200;
+}
+
+.mode-switcher__dropdown--open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.mode-switcher__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.mode-switcher__option:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mode-switcher__opt-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.mode-switcher__opt-label {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.mode-switcher__opt-check {
+  font-size: 16px !important;
+  color: var(--accent-green);
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.mode-switcher__option--active .mode-switcher__opt-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.mode-switcher__option--active {
+  background: rgba(76, 175, 80, 0.08);
+}
+
+.mode-switcher__option--active:hover {
+  background: rgba(76, 175, 80, 0.12);
+}
+
+/* ═══════════════════════════════════════════════
    MAIN CONTENT AREA & AMBIENT GLOW
    ═══════════════════════════════════════════════ */
 .content {

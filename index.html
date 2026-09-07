@@ -31,9 +31,41 @@
         <button class="topbar__icon-btn" id="menu-btn" aria-label="Open sidebar" title="Chat History & Topics">
           <span class="material-symbols-outlined">menu</span>
         </button>
-        <button class="topbar__icon-btn" id="new-chat-btn" aria-label="New design session" title="New Learning Session">
-          <span class="material-symbols-outlined">add</span>
-        </button>
+        <!-- ═══ Mode Switcher (Quiz / Agile) ═══ -->
+        <div class="mode-switcher" id="mode-switcher" title="Switch between Quiz & Agile modes">
+          <div class="mode-switcher__active" id="mode-switcher-trigger">
+            <span class="mode-switcher__icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <text x="8" y="11.5" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor">?</text>
+              </svg>
+            </span>
+            <span class="mode-switcher__label" id="mode-switcher-label">Quiz</span>
+          </div>
+          <div class="mode-switcher__controls">
+            <span class="material-symbols-outlined mode-switcher__dots">more_vert</span>
+            <span class="material-symbols-outlined mode-switcher__clock">schedule</span>
+          </div>
+          <!-- Dropdown -->
+          <div class="mode-switcher__dropdown" id="mode-switcher-dropdown">
+            <button class="mode-switcher__option mode-switcher__option--active" id="mode-opt-quiz" data-mode="quiz">
+              <span class="mode-switcher__opt-icon">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                  <text x="8" y="11.5" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor">?</text>
+                </svg>
+              </span>
+              <span class="mode-switcher__opt-label">Default Quiz Version</span>
+              <span class="material-symbols-outlined mode-switcher__opt-check">check</span>
+            </button>
+            <button class="mode-switcher__option" id="mode-opt-agile" data-mode="agile">
+              <span class="mode-switcher__opt-icon">
+                <span class="material-symbols-outlined" style="font-size: 14px;">bolt</span>
+              </span>
+              <span class="mode-switcher__opt-label">Agile</span>
+            </button>
+          </div>
+        </div>
         <span class="topbar__title" id="chat-title">Interaction & Design System AI</span>
       </div>
       <span class="topbar__status" id="status-label">Prompting</span>

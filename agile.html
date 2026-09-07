@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="Agile Mode — Interactive Design System & UX Architecture AI Tutor with Agile-focused methodology and sprint-based learning." />
+  <title>Agile Mode — Interaction & Design System AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Text&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="agile.css" />
+</head>
+
+<body>
+  <div class="app-shell" id="app-shell">
+    <!-- ═══════ TOP BAR ═══════ -->
+    <header class="topbar" id="topbar">
+      <div class="topbar__left">
+        <div class="topbar__logo" id="logo" title="Design System AI Engine">
+          <svg width="28" height="24" viewBox="0 0 28 24" fill="none">
+            <rect x="2" y="4" width="8" height="16" rx="2" fill="#4CAF50" />
+            <rect x="12" y="8" width="6" height="12" rx="2" fill="#66BB6A" />
+            <rect x="20" y="2" width="6" height="18" rx="2" fill="#81C784" />
+          </svg>
+        </div>
+        <button class="topbar__icon-btn" id="menu-btn" aria-label="Open sidebar" title="Chat History & Topics">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <!-- ═══ Mode Switcher (Quiz / Agile) ═══ -->
+        <div class="mode-switcher" id="mode-switcher" title="Switch between Quiz & Agile modes">
+          <div class="mode-switcher__active mode-switcher__active--agile" id="mode-switcher-trigger">
+            <span class="mode-switcher__icon">
+              <span class="material-symbols-outlined" style="font-size: 16px;">bolt</span>
+            </span>
+            <span class="mode-switcher__label" id="mode-switcher-label">Agile</span>
+          </div>
+          <div class="mode-switcher__controls">
+            <span class="material-symbols-outlined mode-switcher__dots">more_vert</span>
+            <span class="material-symbols-outlined mode-switcher__clock">schedule</span>
+          </div>
+          <!-- Dropdown -->
+          <div class="mode-switcher__dropdown" id="mode-switcher-dropdown">
+            <button class="mode-switcher__option" id="mode-opt-quiz" data-mode="quiz">
+              <span class="mode-switcher__opt-icon">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                  <text x="8" y="11.5" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor">?</text>
+                </svg>
+              </span>
+              <span class="mode-switcher__opt-label">Default Quiz Version</span>
+              <span class="material-symbols-outlined mode-switcher__opt-check">check</span>
+            </button>
+            <button class="mode-switcher__option mode-switcher__option--active" id="mode-opt-agile" data-mode="agile">
+              <span class="mode-switcher__opt-icon">
+                <span class="material-symbols-outlined" style="font-size: 14px;">bolt</span>
+              </span>
+              <span class="mode-switcher__opt-label">Agile</span>
+              <span class="material-symbols-outlined mode-switcher__opt-check">check</span>
+            </button>
+          </div>
+        </div>
+        <span class="topbar__title" id="chat-title">Agile Design Sprints</span>
+      </div>
+      <span class="topbar__status" id="status-label">Agile Mode</span>
+      <div class="topbar__right">
+        <span class="topbar__time" id="current-time">07:00 AM</span>
+        <button class="topbar__icon-btn topbar__star" id="settings-trigger-btn" aria-label="AI Engine Settings"
+          title="AI Provider & Unlimited Tokens Settings">
+          <span class="material-symbols-outlined">kid_star</span>
+        </button>
+        <button class="topbar__icon-btn" id="more-btn" aria-label="More options" title="Page Options">
+          <span class="material-symbols-outlined">more_horiz</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ═══════ OVERLAY BACKDROP ═══════ -->
+    <div class="overlay" id="overlay" aria-hidden="true"></div>
+
+    <!-- ═══════ MAIN CONTENT ═══════ -->
+    <main class="content agile-content" id="main-content">
+      <!-- Ambient glow effects -->
+      <div class="ambient-glow ambient-glow--left" aria-hidden="true"></div>
+      <div class="ambient-glow ambient-glow--right" aria-hidden="true"></div>
+
+      <!-- Agile Landing Section -->
+      <section class="agile-hero" id="agile-hero">
+        <div class="agile-hero__badge">
+          <span class="material-symbols-outlined">bolt</span>
+          <span>Agile Mode</span>
+        </div>
+        <h1 class="agile-hero__heading">Sprint-Based Design Learning</h1>
+        <p class="agile-hero__sub">
+          Fast-paced, iterative design challenges organized in sprints.<br>
+          Build, test, and refine your UX skills with time-boxed exercises.
+        </p>
+
+        <div class="agile-hero__cards">
+          <div class="agile-card" id="agile-card-sprint">
+            <div class="agile-card__icon-wrap">
+              <span class="material-symbols-outlined">sprint</span>
+            </div>
+            <div class="agile-card__body">
+              <h3 class="agile-card__title">Active Sprint</h3>
+              <p class="agile-card__desc">Time-boxed design challenges with real-time feedback and scoring.</p>
+            </div>
+            <span class="material-symbols-outlined agile-card__arrow">arrow_forward</span>
+          </div>
+
+          <div class="agile-card" id="agile-card-retro">
+            <div class="agile-card__icon-wrap agile-card__icon-wrap--purple">
+              <span class="material-symbols-outlined">history</span>
+            </div>
+            <div class="agile-card__body">
+              <h3 class="agile-card__title">Sprint Retrospective</h3>
+              <p class="agile-card__desc">Review past sprints, identify patterns, and improve your design decisions.</p>
+            </div>
+            <span class="material-symbols-outlined agile-card__arrow">arrow_forward</span>
+          </div>
+
+          <div class="agile-card" id="agile-card-backlog">
+            <div class="agile-card__icon-wrap agile-card__icon-wrap--amber">
+              <span class="material-symbols-outlined">view_kanban</span>
+            </div>
+            <div class="agile-card__body">
+              <h3 class="agile-card__title">Design Backlog</h3>
+              <p class="agile-card__desc">Prioritize and manage your design learning topics and challenges.</p>
+            </div>
+            <span class="material-symbols-outlined agile-card__arrow">arrow_forward</span>
+          </div>
+        </div>
+
+        <div class="agile-hero__footer">
+          <span class="agile-hero__hint">
+            <span class="material-symbols-outlined" style="font-size: 16px;">info</span>
+            This page is under development. Sprint challenges coming soon.
+          </span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    /* ═══════ Agile Page — Minimal Script ═══════ */
+    document.addEventListener('DOMContentLoaded', () => {
+      initClock();
+      initModeSwitcher();
+    });
+
+    /* ─── Live Clock ─── */
+    function initClock() {
+      const timeEl = document.getElementById('current-time');
+      if (!timeEl) return;
+      function update() {
+        const now = new Date();
+        let hours = now.getHours();
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        timeEl.textContent = `${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+      }
+      update();
+      setInterval(update, 30000);
+    }
+
+    /* ─── Mode Switcher ─── */
+    function initModeSwitcher() {
+      const switcher = document.getElementById('mode-switcher');
+      const dropdown = document.getElementById('mode-switcher-dropdown');
+      const quizOpt = document.getElementById('mode-opt-quiz');
+      const agileOpt = document.getElementById('mode-opt-agile');
+      const label = document.getElementById('mode-switcher-label');
+
+      if (!switcher || !dropdown) return;
+
+      function toggle() {
+        dropdown.classList.toggle('mode-switcher__dropdown--open');
+      }
+
+      function close() {
+        dropdown.classList.remove('mode-switcher__dropdown--open');
+      }
+
+      switcher.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggle();
+      });
+
+      // Quiz — go back to index.html
+      if (quizOpt) {
+        quizOpt.addEventListener('click', (e) => {
+          e.stopPropagation();
+          close();
+          window.location.href = 'index.html';
+        });
+      }
+
+      // Agile — already on this page
+      if (agileOpt) {
+        agileOpt.addEventListener('click', (e) => {
+          e.stopPropagation();
+          close();
+        });
+      }
+
+      document.addEventListener('click', (e) => {
+        if (!switcher.contains(e.target)) close();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') close();
+      });
+    }
+  </script>
+</body>
+
+</html>
