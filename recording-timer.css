@@ -168,7 +168,7 @@
   transform: translate(-50%, -50%) rotate(120deg) translate(58px, 0);
 }
 
-/* CSS Keyframe Animation for 0.1 rps (10 seconds per turn) */
+/* CSS Keyframe Animation for 0.06 rps (~16.67 seconds per turn) */
 @keyframes spinRing {
   from {
     transform: rotate(0deg);
@@ -179,7 +179,7 @@
 }
 
 .recorder-widget__outer-ring.is-rotating {
-  animation: spinRing 10s linear infinite;
+  animation: spinRing 16.666s linear infinite;
 }
 
 /* Inner Green Solid Circle Toggle Button */

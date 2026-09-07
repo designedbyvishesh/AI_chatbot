@@ -174,15 +174,8 @@ class RecordingTimer {
     this.ctx = this.canvas.getContext('2d');
     this.resizeCanvas();
 
-    // Pre-fill history buffer with baseline amplitude bars
+    // Start with empty history (no waveform before recording starts)
     this.waveformHistory = [];
-    for (let i = 0; i < 40; i++) {
-      const time = -(40 - i) * 0.05;
-      this.waveformHistory.push({
-        time: time,
-        amp: 0.05 + Math.sin(i * 0.3) * 0.02
-      });
-    }
 
     this.renderCanvas();
   }
@@ -219,18 +212,18 @@ class RecordingTimer {
       const waveformAreaHeight = height - rulerHeight;
       const centerY = waveformAreaHeight / 2;
 
-      // Speed: Pixels per second (matching waveform & timeline ruler)
-      const pixelsPerSecond = 55 * dpr;
+      // Speed: Pixels per second (increased 15% to 63.25 * dpr for wider timestamp spacing)
+      const pixelsPerSecond = 63.25 * dpr;
       const rightX = width - (8 * dpr);
-      const barWidth = 3 * dpr;
+      const barWidth = 2 * dpr; // 2px waveform bar thickness
 
       // Update elapsed time & capture audio sample if recording
       if (this.state === 'recording') {
         this.elapsedSecondsFloat += dt;
         this.elapsedSeconds = Math.floor(this.elapsedSecondsFloat);
 
-        // Sample audio amplitude every 40ms (~25 samples/sec)
-        if (currentTime - this.lastSampleTime > 40) {
+        // Sample audio amplitude every ~63.2ms (gives 2px bar + 2px gap spacing)
+        if (currentTime - this.lastSampleTime > 63.2) {
           const amp = this.getAudioAmplitude();
           this.waveformHistory.push({ time: this.elapsedSecondsFloat, amp: amp });
           this.lastSampleTime = currentTime;
@@ -248,7 +241,7 @@ class RecordingTimer {
         }
       }
 
-      // Draw Waveform Bars (moving right to left in sync with timeline ruler)
+      // Draw Waveform Bars (2px width, 2px gap, moving right to left)
       for (let i = 0; i < this.waveformHistory.length; i++) {
         const item = this.waveformHistory[i];
         const x = rightX - (this.elapsedSecondsFloat - item.time) * pixelsPerSecond;
