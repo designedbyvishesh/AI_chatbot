@@ -157,15 +157,15 @@
 }
 
 .recorder-widget__ring-tick--1 {
-  transform: translate(-50%, -50%) rotate(-120deg) translate(58px, 0);
+  transform: translate(-50%, -50%) rotate(-120deg) translate(50px, 0);
 }
 
 .recorder-widget__ring-tick--2 {
-  transform: translate(-50%, -50%) rotate(0deg) translate(58px, 0);
+  transform: translate(-50%, -50%) rotate(0deg) translate(50px, 0);
 }
 
 .recorder-widget__ring-tick--3 {
-  transform: translate(-50%, -50%) rotate(120deg) translate(58px, 0);
+  transform: translate(-50%, -50%) rotate(120deg) translate(50px, 0);
 }
 
 /* CSS Keyframe Animation for 0.06 rps (~16.67 seconds per turn) */
