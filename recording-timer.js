@@ -402,8 +402,9 @@ class RecordingTimer {
 
     // UI Updates
     this.dom.outerRing.classList.add('is-rotating');
-    this.dom.presetsGrid.classList.add('is-hidden');
-    this.dom.extendersRow.classList.remove('is-hidden');
+    // Note: Extender buttons (+05m, +10m) kept hidden as requested, preserving preset grid
+    // this.dom.presetsGrid.classList.add('is-hidden');
+    // this.dom.extendersRow.classList.remove('is-hidden');
     this.dom.saveBtn.classList.remove('is-visible');
 
     // Start Timer Ticker

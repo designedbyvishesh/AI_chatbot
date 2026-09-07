@@ -150,7 +150,7 @@
 .recorder-widget__ring-tick {
   position: absolute;
   width: 8px;
-  height: 1.5px;
+  height: 1px;
   background-color: rgba(255, 255, 255, 0.4);
   top: 50%;
   left: 50%;
@@ -173,6 +173,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -299,6 +300,6 @@
 }
 
 .recorder-widget__timer-display.is-overtime {
-  color: #FF5252;
-  text-shadow: 0 0 12px rgba(255, 82, 82, 0.4);
+  color: #00E676;
+  text-shadow: 0 0 12px rgba(0, 230, 118, 0.4);
 }
