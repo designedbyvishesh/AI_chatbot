@@ -5,8 +5,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description"
-    content="Agile Mode — Interactive Design System & UX Architecture AI Tutor with Agile-focused methodology and sprint-based learning." />
-  <title>Agile Mode — Interaction & Design System AI</title>
+    content="Agile Whiteboard Session — Interactive Design System & UX Architecture AI Tutor with real-time audio recording and AI workspace." />
+  <title>Agile Whiteboard — Interaction & Design System AI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -14,6 +14,7 @@
     rel="stylesheet" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="recording-timer.css" />
   <link rel="stylesheet" href="agile.css" />
 </head>
 
@@ -65,13 +66,11 @@
             </button>
           </div>
         </div>
-        <span class="topbar__title" id="chat-title">Agile Design Sprints</span>
       </div>
-      <span class="topbar__status" id="status-label">Agile Mode</span>
       <div class="topbar__right">
         <span class="topbar__time" id="current-time">07:00 AM</span>
         <button class="topbar__icon-btn topbar__star" id="settings-trigger-btn" aria-label="AI Engine Settings"
-          title="AI Provider & Unlimited Tokens Settings">
+          title="AI Provider & Settings">
           <span class="material-symbols-outlined">kid_star</span>
         </button>
         <button class="topbar__icon-btn" id="more-btn" aria-label="More options" title="Page Options">
@@ -83,77 +82,120 @@
     <!-- ═══════ OVERLAY BACKDROP ═══════ -->
     <div class="overlay" id="overlay" aria-hidden="true"></div>
 
-    <!-- ═══════ MAIN CONTENT ═══════ -->
-    <main class="content agile-content" id="main-content">
-      <!-- Ambient glow effects -->
-      <div class="ambient-glow ambient-glow--left" aria-hidden="true"></div>
-      <div class="ambient-glow ambient-glow--right" aria-hidden="true"></div>
-
-      <!-- Agile Landing Section -->
-      <section class="agile-hero" id="agile-hero">
-        <div class="agile-hero__badge">
-          <span class="material-symbols-outlined">bolt</span>
-          <span>Agile Mode</span>
+    <!-- ═══════ LEFT SIDEBAR ═══════ -->
+    <aside class="sidebar" id="sidebar" aria-label="Chat sidebar">
+      <!-- Header -->
+      <div class="sidebar__header">
+        <div class="sidebar__logo">
+          <svg width="31" height="27" viewBox="0 0 31 27" fill="none">
+            <rect x="2" y="4" width="9" height="19" rx="2" fill="#4CAF50" />
+            <rect x="13" y="8" width="7" height="14" rx="2" fill="#66BB6A" />
+            <rect x="22" y="2" width="7" height="21" rx="2" fill="#81C784" />
+          </svg>
         </div>
-        <h1 class="agile-hero__heading">Sprint-Based Design Learning</h1>
-        <p class="agile-hero__sub">
-          Fast-paced, iterative design challenges organized in sprints.<br>
-          Build, test, and refine your UX skills with time-boxed exercises.
-        </p>
+        <button class="sidebar__close-btn" id="sidebar-close-btn" aria-label="Close sidebar">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
 
-        <div class="agile-hero__cards">
-          <div class="agile-card" id="agile-card-sprint">
-            <div class="agile-card__icon-wrap">
-              <span class="material-symbols-outlined">sprint</span>
-            </div>
-            <div class="agile-card__body">
-              <h3 class="agile-card__title">Active Sprint</h3>
-              <p class="agile-card__desc">Time-boxed design challenges with real-time feedback and scoring.</p>
-            </div>
-            <span class="material-symbols-outlined agile-card__arrow">arrow_forward</span>
+      <!-- Tabs -->
+      <div class="sidebar__tabs">
+        <button class="sidebar__tab sidebar__tab--active" id="tab-all-chats">All Sessions</button>
+        <button class="sidebar__tab" id="tab-favorites">
+          <span class="material-symbols-outlined sidebar__tab-icon">kid_star</span>
+          <span>Starred</span>
+        </button>
+      </div>
+
+      <!-- Chat History / Modules -->
+      <div class="sidebar__history" id="sidebar-history">
+        <div class="sidebar__history-section" id="user-history-section">
+          <div class="sidebar__section-header">
+            <span class="material-symbols-outlined sidebar__section-icon">history</span>
+            <span class="sidebar__section-title">Agile Session History</span>
           </div>
-
-          <div class="agile-card" id="agile-card-retro">
-            <div class="agile-card__icon-wrap agile-card__icon-wrap--purple">
-              <span class="material-symbols-outlined">history</span>
-            </div>
-            <div class="agile-card__body">
-              <h3 class="agile-card__title">Sprint Retrospective</h3>
-              <p class="agile-card__desc">Review past sprints, identify patterns, and improve your design decisions.</p>
-            </div>
-            <span class="material-symbols-outlined agile-card__arrow">arrow_forward</span>
-          </div>
-
-          <div class="agile-card" id="agile-card-backlog">
-            <div class="agile-card__icon-wrap agile-card__icon-wrap--amber">
-              <span class="material-symbols-outlined">view_kanban</span>
-            </div>
-            <div class="agile-card__body">
-              <h3 class="agile-card__title">Design Backlog</h3>
-              <p class="agile-card__desc">Prioritize and manage your design learning topics and challenges.</p>
-            </div>
-            <span class="material-symbols-outlined agile-card__arrow">arrow_forward</span>
+          <div class="sidebar__session-list" id="user-session-list">
+            <!-- Dynamically populated by agile-session.js -->
           </div>
         </div>
+      </div>
+    </aside>
 
-        <div class="agile-hero__footer">
-          <span class="agile-hero__hint">
-            <span class="material-symbols-outlined" style="font-size: 16px;">info</span>
-            This page is under development. Sprint challenges coming soon.
-          </span>
+    <!-- ═══════ MAIN CONTENT: FLOATING AGILE WHITEBOARD ═══════ -->
+    <main class="agile-workspace" id="agile-workspace">
+      <!-- Dark Wallpaper Ambient Background -->
+      <div class="agile-wallpaper-bg" aria-hidden="true"></div>
+
+      <!-- ─── FLOATING LEFT CARD CONTAINER ─── -->
+      <div class="agile-floating-panel" id="agile-floating-panel">
+        <!-- Session Title Header (W1 ✎) -->
+        <div class="session-title-header">
+          <div class="session-title-header__left">
+            <h2 class="session-title-header__name" id="session-title" contenteditable="true" spellcheck="false">W1</h2>
+            <button class="session-title-header__edit-btn" id="edit-title-btn" aria-label="Edit title" title="Edit session title">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+          </div>
+          <button class="session-title-header__save-btn" id="save-session-btn" title="Save session to history">Save</button>
         </div>
-      </section>
+
+        <!-- Section 1: Lessons from last -->
+        <div class="agile-section">
+          <div class="agile-section__label">Lessons from last:</div>
+          <div class="agile-inner-card agile-inner-card--lessons">
+            <ul class="agile-bullet-list">
+              <li>Say the words clearly</li>
+              <li>Take pauses over fillers works</li>
+              <li>Finish first sentence then go to another</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Section 2: Timer & Recorder -->
+        <div class="agile-section">
+          <div class="agile-section__label">Timer & Recorder</div>
+          <div class="agile-inner-card agile-inner-card--recorder">
+            <div id="agile-recorder-container"></div>
+          </div>
+        </div>
+
+        <!-- Section 3: Take notes -->
+        <div class="agile-section agile-section--notes">
+          <div class="agile-section__label">Take notes:</div>
+          <div class="agile-inner-card agile-inner-card--notes">
+            <textarea class="agile-notes-input" id="agile-notes-input" placeholder=""></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── RIGHT CANVAS AREA & FLOATING PROMPT BAR ─── -->
+      <div class="agile-canvas-space" id="agile-canvas-space">
+        <!-- Floating Prompt Input Bar at Bottom Right -->
+        <div class="agile-prompt-wrapper">
+          <div class="agile-prompt-bar">
+            <input type="text" class="agile-prompt-input" id="agile-prompt-input" placeholder="Have any question? do ask" autocomplete="off" />
+            <button class="agile-prompt-send-btn" id="agile-prompt-send-btn" aria-label="Send prompt">
+              <span class="material-symbols-outlined">send</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
 
+  <!-- Include RecordingTimer JS Script & Agile Session Manager -->
+  <script src="recording-timer.js"></script>
+  <script src="agile-session.js"></script>
   <script>
-    /* ═══════ Agile Page — Minimal Script ═══════ */
     document.addEventListener('DOMContentLoaded', () => {
       initClock();
       initModeSwitcher();
+      initRecorderWidget();
+      initEditableTitle();
+      initPromptInput();
     });
 
-    /* ─── Live Clock ─── */
+    /* ── Live Clock ── */
     function initClock() {
       const timeEl = document.getElementById('current-time');
       if (!timeEl) return;
@@ -169,53 +211,69 @@
       setInterval(update, 30000);
     }
 
-    /* ─── Mode Switcher ─── */
+    /* ── Mode Switcher ── */
     function initModeSwitcher() {
       const switcher = document.getElementById('mode-switcher');
       const dropdown = document.getElementById('mode-switcher-dropdown');
       const quizOpt = document.getElementById('mode-opt-quiz');
       const agileOpt = document.getElementById('mode-opt-agile');
-      const label = document.getElementById('mode-switcher-label');
 
       if (!switcher || !dropdown) return;
 
-      function toggle() {
-        dropdown.classList.toggle('mode-switcher__dropdown--open');
-      }
-
-      function close() {
-        dropdown.classList.remove('mode-switcher__dropdown--open');
-      }
-
       switcher.addEventListener('click', (e) => {
         e.stopPropagation();
-        toggle();
+        dropdown.classList.toggle('mode-switcher__dropdown--open');
       });
 
-      // Quiz — go back to index.html
       if (quizOpt) {
         quizOpt.addEventListener('click', (e) => {
           e.stopPropagation();
-          close();
+          dropdown.classList.remove('mode-switcher__dropdown--open');
           window.location.href = 'index.html';
         });
       }
 
-      // Agile — already on this page
-      if (agileOpt) {
-        agileOpt.addEventListener('click', (e) => {
-          e.stopPropagation();
-          close();
+      document.addEventListener('click', (e) => {
+        if (!switcher.contains(e.target)) dropdown.classList.remove('mode-switcher__dropdown--open');
+      });
+    }
+
+    /* ── Initialize RecordingTimer Widget ── */
+    function initRecorderWidget() {
+      window.AgileRecorderInstance = new RecordingTimer('#agile-recorder-container', {
+        onSave: (payload) => {
+          console.log('Agile Whiteboard Audio Saved:', payload);
+        }
+      });
+    }
+
+    /* ── Editable Session Title ── */
+    function initEditableTitle() {
+      const titleEl = document.getElementById('session-title');
+      const editBtn = document.getElementById('edit-title-btn');
+      if (editBtn && titleEl) {
+        editBtn.addEventListener('click', () => {
+          titleEl.focus();
         });
       }
+    }
 
-      document.addEventListener('click', (e) => {
-        if (!switcher.contains(e.target)) close();
-      });
+    /* ── Prompt Input Button Active State ── */
+    function initPromptInput() {
+      const input = document.getElementById('agile-prompt-input');
+      const sendBtn = document.getElementById('agile-prompt-send-btn');
+      if (!input || !sendBtn) return;
 
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') close();
-      });
+      function update() {
+        if (input.value.trim().length > 0) {
+          sendBtn.classList.add('is-active');
+        } else {
+          sendBtn.classList.remove('is-active');
+        }
+      }
+
+      input.addEventListener('input', update);
+      update();
     }
   </script>
 </body>
