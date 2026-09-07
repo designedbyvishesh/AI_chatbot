@@ -206,7 +206,7 @@ class RecordingTimer {
       this.ctx.clearRect(0, 0, width, height);
 
       // Background
-      this.ctx.fillStyle = '#000000';
+      this.ctx.fillStyle = '#121213';
       this.ctx.fillRect(0, 0, width, height);
 
       const rulerHeight = 36 * dpr;
@@ -220,26 +220,25 @@ class RecordingTimer {
 
       // Update elapsed time & capture audio sample if recording
       if (this.state === 'recording') {
-        this.elapsedSecondsFloat += dt;
-        this.elapsedSeconds = Math.floor(this.elapsedSecondsFloat);
+        if (this.realAudioPlaying && this.audioElement) {
+          this.elapsedSecondsFloat = this.audioElement.currentTime;
+          this.elapsedSeconds = Math.floor(this.elapsedSecondsFloat);
+        } else {
+          this.elapsedSecondsFloat += dt;
+          this.elapsedSeconds = Math.floor(this.elapsedSecondsFloat);
 
-        // Sample audio amplitude every ~63.2ms (gives 2px bar + 2px gap spacing)
-        if (currentTime - this.lastSampleTime > 63.2) {
-          const amp = this.getAudioAmplitude();
-          this.waveformHistory.push({ time: this.elapsedSecondsFloat, amp: amp });
-          this.lastSampleTime = currentTime;
+          // Sample audio amplitude every ~63.2ms (gives 2px bar + 2px gap spacing)
+          if (currentTime - this.lastSampleTime > 63.2) {
+            const amp = this.getAudioAmplitude();
+            this.waveformHistory.push({ time: this.elapsedSecondsFloat, amp: amp });
+            this.lastSampleTime = currentTime;
+          }
         }
       }
 
-      // Prune old samples that are off the left edge of canvas
-      while (this.waveformHistory.length > 0) {
-        const first = this.waveformHistory[0];
-        const firstX = rightX - (this.elapsedSecondsFloat - first.time) * pixelsPerSecond;
-        if (firstX < -50 * dpr) {
-          this.waveformHistory.shift();
-        } else {
-          break;
-        }
+      // Retain waveform history so rewind/forward scrubbing works smoothly
+      if (this.waveformHistory.length > 50000) {
+        this.waveformHistory = this.waveformHistory.slice(-40000);
       }
 
       // Draw Waveform Bars (2px width, 2px gap, moving right to left)
@@ -399,11 +398,14 @@ class RecordingTimer {
 
   startRecording() {
     this.state = 'recording';
+    this.dom.recordBtn.classList.remove('is-paused');
     this.startAudioCapture();
 
-    // UI Updates: Hide buttons area (4 preset buttons grid) once recording starts for minimal view
+    // UI Updates: Hide buttons area once recording starts for minimal view, EXCEPT in history mode
     this.dom.outerRing.classList.add('is-rotating');
-    if (this.dom.buttonsArea) this.dom.buttonsArea.classList.add('is-hidden');
+    if (this.dom.buttonsArea && !this.isHistoryMode) {
+      this.dom.buttonsArea.classList.add('is-hidden');
+    }
     this.dom.saveBtn.classList.remove('is-visible');
 
     // Start Timer Ticker
@@ -412,33 +414,143 @@ class RecordingTimer {
 
   pauseRecording() {
     this.state = 'paused';
+    this.dom.recordBtn.classList.add('is-paused');
 
-    // UI Updates
+    // UI Updates: Stop ring rotation and show save button in session title header
     this.dom.outerRing.classList.remove('is-rotating');
-    this.dom.saveBtn.classList.add('is-visible');
+    if (typeof window.showSessionHeaderSaveBtn === 'function') {
+      window.showSessionHeaderSaveBtn();
+    }
 
     // Pause audio recorder stream if active
     if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
       this.mediaRecorder.pause();
     }
 
-    // Stop timer ticker
+    // NOTE: Timer ticker does NOT clear on pause; timer only stops when session is saved!
+  }
+
+  saveSession() {
+    this.state = 'saved';
     this.clearTimerTicker();
+    this.stopAudioCapture();
+  }
+
+  stopAudioCapture() {
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      try {
+        this.mediaRecorder.stop();
+      } catch (e) {}
+    }
+    if (this.audioChunks && this.audioChunks.length > 0) {
+      this.recordedBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+    }
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach(track => track.stop());
+    }
+  }
+
+  getAudioDataUrl() {
+    return new Promise((resolve) => {
+      if (this.audioChunks && this.audioChunks.length > 0 && !this.recordedBlob) {
+        this.recordedBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+      }
+      if (!this.recordedBlob || this.recordedBlob.size === 0) {
+        return resolve(null);
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(this.recordedBlob);
+    });
   }
 
   resumeRecording() {
     this.state = 'recording';
 
     // UI Updates
+    this.dom.recordBtn.classList.remove('is-paused');
     this.dom.outerRing.classList.add('is-rotating');
-    this.dom.saveBtn.classList.remove('is-visible');
 
     // Resume audio recorder
     if (this.mediaRecorder && this.mediaRecorder.state === 'paused') {
       this.mediaRecorder.resume();
     }
+  }
 
-    this.startTimerTicker();
+  /**
+   * Real Audio Playback for Past Sessions
+   */
+  playRealAudio(audioUrl) {
+    this.isHistoryMode = true;
+
+    if (this.realAudioPlaying) {
+      this.pauseRealAudio();
+      return;
+    }
+
+    if (audioUrl) {
+      this.audioUrl = audioUrl;
+    }
+
+    if (!this.audioUrl && !this.audioElement) {
+      console.warn('No recorded audio URL available for this session.');
+      return;
+    }
+
+    if (!this.audioElement && this.audioUrl) {
+      this.audioElement = new Audio(this.audioUrl);
+
+      this.audioElement.addEventListener('ended', () => {
+        this.pauseRealAudio();
+      });
+
+      this.audioElement.addEventListener('timeupdate', () => {
+        if (this.audioElement && this.audioElement.duration) {
+          const current = this.audioElement.currentTime;
+          const total = this.audioElement.duration;
+          this.elapsedSecondsFloat = current;
+          this.elapsedSeconds = Math.floor(current);
+          this.remainingSeconds = Math.max(0, Math.floor(total - current));
+          this.updateTimerDisplay();
+        }
+      });
+    }
+
+    if (this.audioElement) {
+      this.audioElement.play().then(() => {
+        this.realAudioPlaying = true;
+        this.dom.recordBtn.classList.remove('is-paused');
+        this.dom.outerRing.classList.add('is-rotating');
+        this.state = 'recording';
+        this.startTimerTicker();
+      }).catch(err => {
+        console.warn('Audio playback Error:', err);
+      });
+    }
+
+    this.showSkipControls();
+  }
+
+  pauseRealAudio() {
+    this.isHistoryMode = true;
+    this.realAudioPlaying = false;
+    this.dom.recordBtn.classList.add('is-paused');
+    this.dom.outerRing.classList.remove('is-rotating');
+    if (this.audioElement) {
+      this.audioElement.pause();
+    }
+    this.clearTimerTicker();
+    this.showSkipControls();
+  }
+
+  /**
+   * Set timer duration programmatically
+   */
+  setDuration(totalSeconds) {
+    this.remainingSeconds = totalSeconds;
+    this.selectedPresetMinutes = Math.floor(totalSeconds / 60);
+    this.updateTimerDisplay();
   }
 
   /**
@@ -453,6 +565,85 @@ class RecordingTimer {
   addMinutes(mins) {
     this.remainingSeconds += mins * 60;
     this.updateTimerDisplay();
+  }
+
+  generateHistoryWaveform(totalDuration = 2700) {
+    this.waveformHistory = [];
+    const step = 0.0632;
+    for (let t = 0; t <= totalDuration; t += step) {
+      const base = Math.sin(t * 0.8) * 0.35 + Math.cos(t * 2.1) * 0.25 + Math.sin(t * 0.15) * 0.15;
+      const amp = Math.min(0.85, Math.max(0.05, Math.abs(base) + 0.08));
+      this.waveformHistory.push({ time: t, amp: amp });
+    }
+  }
+
+  skipReplay(secs = 10) {
+    if (this.audioElement) {
+      this.audioElement.currentTime = Math.max(0, this.audioElement.currentTime - secs);
+      this.elapsedSecondsFloat = this.audioElement.currentTime;
+      this.elapsedSeconds = Math.floor(this.elapsedSecondsFloat);
+      if (this.audioElement.duration) {
+        this.remainingSeconds = Math.max(0, Math.floor(this.audioElement.duration - this.audioElement.currentTime));
+      }
+    } else {
+      this.remainingSeconds += secs;
+      this.elapsedSecondsFloat = Math.max(0, this.elapsedSecondsFloat - secs);
+      this.elapsedSeconds = Math.floor(this.elapsedSecondsFloat);
+    }
+    this.updateTimerDisplay();
+  }
+
+  skipForward(secs = 10) {
+    if (this.audioElement) {
+      const dur = this.audioElement.duration || 3600;
+      this.audioElement.currentTime = Math.min(dur, this.audioElement.currentTime + secs);
+      this.elapsedSecondsFloat = this.audioElement.currentTime;
+      this.elapsedSeconds = Math.floor(this.elapsedSecondsFloat);
+      this.remainingSeconds = Math.max(0, Math.floor(dur - this.audioElement.currentTime));
+    } else {
+      this.remainingSeconds = Math.max(0, this.remainingSeconds - secs);
+      this.elapsedSecondsFloat += secs;
+      this.elapsedSeconds = Math.floor(this.elapsedSecondsFloat);
+    }
+    this.updateTimerDisplay();
+  }
+
+  showSkipControls() {
+    this.isHistoryMode = true;
+    if (this.waveformHistory.length === 0) {
+      this.generateHistoryWaveform(2700);
+      this.elapsedSecondsFloat = 54;
+      this.elapsedSeconds = 54;
+      this.remainingSeconds = 2646; // 44:06 remaining
+    }
+
+    if (!this.dom.buttonsArea) return;
+    this.dom.buttonsArea.classList.remove('is-hidden');
+    if (this.dom.presetsGrid) this.dom.presetsGrid.style.display = 'none';
+    if (this.dom.extendersRow) {
+      this.dom.extendersRow.classList.remove('is-hidden');
+      this.dom.ext5Btn.textContent = '-10 sec';
+      this.dom.ext10Btn.textContent = '+10 sec';
+      this.dom.ext5Btn.title = 'Replay 10 seconds';
+      this.dom.ext10Btn.title = 'Forward 10 seconds';
+
+      // Unbind previous & rebind skip 10s controls
+      const newExt5 = this.dom.ext5Btn.cloneNode(true);
+      const newExt10 = this.dom.ext10Btn.cloneNode(true);
+      this.dom.ext5Btn.parentNode.replaceChild(newExt5, this.dom.ext5Btn);
+      this.dom.ext10Btn.parentNode.replaceChild(newExt10, this.dom.ext10Btn);
+      this.dom.ext5Btn = newExt5;
+      this.dom.ext10Btn = newExt10;
+
+      this.dom.ext5Btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.skipReplay(10);
+      });
+      this.dom.ext10Btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.skipForward(10);
+      });
+    }
   }
 
   startTimerTicker() {
@@ -540,6 +731,7 @@ class RecordingTimer {
 
     this.initCanvas();
 
+    this.dom.recordBtn.classList.remove('is-paused');
     this.dom.outerRing.classList.remove('is-rotating');
     if (this.dom.buttonsArea) this.dom.buttonsArea.classList.remove('is-hidden');
     this.dom.presetsGrid.classList.remove('is-hidden');
