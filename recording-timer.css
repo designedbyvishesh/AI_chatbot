@@ -82,10 +82,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 24px 20px 24px 20px;
   position: relative;
   box-sizing: border-box;
+  gap: 32px;
 }
 
 /* Top Header area (Save button when paused) */
@@ -126,7 +127,6 @@
 
 /* ── Circular Control Dial ── */
 .recorder-widget__dial-container {
-  margin-top: 12px;
   position: relative;
   width: 124px;
   height: 124px;
@@ -214,7 +214,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 84px;
+}
+
+.recorder-widget__buttons-area.is-hidden {
+  display: none !important;
 }
 
 /* State 1: Preset Buttons 2x2 Grid */
@@ -292,7 +295,7 @@
   font-weight: 700;
   letter-spacing: -0.5px;
   color: #ffffff;
-  margin-top: 4px;
+  margin-top: 0;
   font-variant-numeric: tabular-nums;
   display: flex;
   align-items: center;

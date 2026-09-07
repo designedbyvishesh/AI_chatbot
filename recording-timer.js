@@ -128,6 +128,7 @@ class RecordingTimer {
       outerRing: this.container.querySelector('#rw-outer-ring'),
       recordBtn: this.container.querySelector('#rw-record-btn'),
       saveBtn: this.container.querySelector('#rw-save-btn'),
+      buttonsArea: this.container.querySelector('.recorder-widget__buttons-area'),
       presetsGrid: this.container.querySelector('#rw-presets-grid'),
       presetBtns: this.container.querySelectorAll('.recorder-widget__preset-btn'),
       extendersRow: this.container.querySelector('#rw-extenders-row'),
@@ -400,11 +401,9 @@ class RecordingTimer {
     this.state = 'recording';
     this.startAudioCapture();
 
-    // UI Updates
+    // UI Updates: Hide buttons area (4 preset buttons grid) once recording starts for minimal view
     this.dom.outerRing.classList.add('is-rotating');
-    // Note: Extender buttons (+05m, +10m) kept hidden as requested, preserving preset grid
-    // this.dom.presetsGrid.classList.add('is-hidden');
-    // this.dom.extendersRow.classList.remove('is-hidden');
+    if (this.dom.buttonsArea) this.dom.buttonsArea.classList.add('is-hidden');
     this.dom.saveBtn.classList.remove('is-visible');
 
     // Start Timer Ticker
@@ -542,6 +541,7 @@ class RecordingTimer {
     this.initCanvas();
 
     this.dom.outerRing.classList.remove('is-rotating');
+    if (this.dom.buttonsArea) this.dom.buttonsArea.classList.remove('is-hidden');
     this.dom.presetsGrid.classList.remove('is-hidden');
     this.dom.extendersRow.classList.add('is-hidden');
     this.dom.saveBtn.classList.remove('is-visible');
