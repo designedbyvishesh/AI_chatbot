@@ -183,12 +183,12 @@
   animation: spinRing 16.666s linear infinite;
 }
 
-/* Inner Green Solid Circle Toggle Button */
+/* Inner Circle Toggle Button */
 .recorder-widget__record-btn {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background-color: #00C853;
+  background-color: #AAAAAA;
   border: none;
   cursor: pointer;
   z-index: 10;
@@ -197,22 +197,28 @@
   outline: none;
 }
 
-.recorder-widget__record-btn:hover {
-  transform: scale(1.08);
-  background-color: #00E676;
-  box-shadow: none;
+.recorder-widget__record-btn.is-disabled {
+  background-color: #AAAAAA !important;
+  cursor: not-allowed;
+  opacity: 0.85;
+  transform: none !important;
 }
 
-.recorder-widget__record-btn:active {
-  transform: scale(0.95);
+.recorder-widget__record-btn.is-recording {
+  background-color: #00C853 !important;
+}
+
+.recorder-widget__record-btn.is-recording:hover {
+  transform: scale(1.08);
+  background-color: #00E676 !important;
 }
 
 .recorder-widget__record-btn.is-paused {
-  background-color: #999999 !important;
+  background-color: #AAAAAA !important;
 }
 
 .recorder-widget__record-btn.is-paused:hover {
-  background-color: #aaaaaa !important;
+  background-color: #BDBDBD !important;
 }
 
 /* ── Buttons Block (Presets & Extenders) ── */

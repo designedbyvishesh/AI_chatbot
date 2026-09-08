@@ -23,6 +23,9 @@ class RecordingTimer {
     // States: 'idle' | 'recording' | 'paused'
     this.state = 'idle';
 
+    // Lock recording until unlocked via agile-q-time-card selection
+    this.isUnlocked = false;
+
     // Timer settings (in seconds)
     this.selectedPresetMinutes = 0; // Default 0 min until selected from agile-q-time-card
     this.remainingSeconds = 0;
@@ -58,6 +61,11 @@ class RecordingTimer {
     this.bindEvents();
     this.initCanvas();
     this.updateTimerDisplay();
+
+    // Initially disable record button on right panel
+    if (this.dom && this.dom.recordBtn) {
+      this.dom.recordBtn.classList.add('is-disabled');
+    }
   }
 
   /**
@@ -387,6 +395,10 @@ class RecordingTimer {
    * State Machine Toggle (Idle -> Recording -> Paused)
    */
   toggleRecordPause() {
+    if (!this.isUnlocked) {
+      console.log('Record button is disabled until a duration is selected in agile-q-time-card.');
+      return;
+    }
     if (this.state === 'idle') {
       this.startRecording();
     } else if (this.state === 'recording') {
@@ -397,8 +409,14 @@ class RecordingTimer {
   }
 
   startRecording() {
+    if (!this.isUnlocked || (this.remainingSeconds <= 0 && this.selectedPresetMinutes === 0)) {
+      console.log('Cannot start recording: No time selected or duration is No.');
+      return;
+    }
     this.state = 'recording';
+    this.dom.recordBtn.classList.remove('is-disabled');
     this.dom.recordBtn.classList.remove('is-paused');
+    this.dom.recordBtn.classList.add('is-recording');
     this.startAudioCapture();
 
     // UI Updates: Hide buttons area once recording starts for minimal view, EXCEPT in history mode
@@ -544,12 +562,22 @@ class RecordingTimer {
     this.showSkipControls();
   }
 
-  /**
-   * Set timer duration programmatically
-   */
   setDuration(totalSeconds) {
     this.remainingSeconds = totalSeconds;
     this.selectedPresetMinutes = Math.floor(totalSeconds / 60);
+    if (totalSeconds > 0) {
+      this.isUnlocked = true;
+      if (this.dom && this.dom.recordBtn) {
+        this.dom.recordBtn.classList.remove('is-disabled');
+      }
+    } else {
+      this.isUnlocked = false;
+      if (this.dom && this.dom.recordBtn) {
+        this.dom.recordBtn.classList.add('is-disabled');
+        this.dom.recordBtn.classList.remove('is-recording');
+        this.dom.recordBtn.classList.remove('is-paused');
+      }
+    }
     this.updateTimerDisplay();
   }
 
@@ -648,6 +676,9 @@ class RecordingTimer {
 
   startTimerTicker() {
     this.clearTimerTicker();
+    if (!this.isUnlocked || (this.remainingSeconds <= 0 && this.selectedPresetMinutes === 0)) {
+      return;
+    }
     this.timerInterval = setInterval(() => {
       this.elapsedSeconds++;
       this.remainingSeconds--;
