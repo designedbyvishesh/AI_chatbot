@@ -340,7 +340,9 @@
     sessionState.mode = 'homepage';
     const homeView = document.getElementById('agile-homepage-view');
     const sessionView = document.getElementById('agile-session-view');
+    const topbar = document.getElementById('topbar');
 
+    if (topbar) topbar.style.display = 'flex';
     if (homeView && sessionView) {
       sessionView.style.display = 'none';
       homeView.style.display = 'block';
@@ -355,7 +357,9 @@
 
     const homeView = document.getElementById('agile-homepage-view');
     const sessionView = document.getElementById('agile-session-view');
+    const topbar = document.getElementById('topbar');
 
+    if (topbar) topbar.style.display = 'none';
     if (homeView && sessionView) {
       homeView.style.display = 'none';
       sessionView.style.display = 'flex';
@@ -378,7 +382,9 @@
 
     const homeView = document.getElementById('agile-homepage-view');
     const sessionView = document.getElementById('agile-session-view');
+    const topbar = document.getElementById('topbar');
 
+    if (topbar) topbar.style.display = 'none';
     if (homeView && sessionView) {
       homeView.style.display = 'none';
       sessionView.style.display = 'flex';
