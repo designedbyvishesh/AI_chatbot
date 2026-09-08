@@ -1,14 +1,22 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   AGILE WHITEBOARD SESSION PAGE STYLES
-   Exact floating panel implementation matching mockup image
+   AGILE WHITEBOARD SESSION PAGE STYLES — REDESIGNED HOMEPAGE & SESSION VIEW
+   Exact implementation matching Image 1 (Homepage) & Image 2 (Session Page)
    ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --agile-primary-dark: #56D364;
+  --agile-primary-light: #008A25;
+  --agile-card-bg: #191919;
+  --agile-streak-empty: #102310;
+  --agile-bg-dark: #070708;
+}
 
 /* ── Workspace Main Layout ── */
 .agile-workspace {
   display: flex;
   width: 100vw;
   height: calc(100vh - 56px);
-  background-color: #050507;
+  background-color: #000000;
   overflow: hidden;
   position: relative;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -24,60 +32,422 @@
   background-position: center center;
   background-repeat: no-repeat;
   pointer-events: none;
+  opacity: 0.45;
   z-index: 1;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   FLOATING LEFT CARD CONTAINER (Single Outer Gray Card Panel)
+   AGILE HOMEPAGE VIEW (Image 1)
    ═══════════════════════════════════════════════════════════════════════════ */
-.agile-floating-panel {
+.agile-homepage-container {
   position: relative;
   z-index: 10;
-  min-width: 550px;
-  width: 550px;
-  max-width: 48vw;
-  height: calc(100% - 48px);
-  margin: 24px 0 24px 32px;
-  background-color: #1c1c1e;
-  border: none;
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+  width: 100%;
+  max-width: 710px;
+  margin: 0 auto;
+  padding: 48px 24px 60px 24px;
+  overflow-y: auto;
+  height: 100%;
+  box-sizing: border-box;
+  scrollbar-width: none;
+}
+.agile-homepage-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Greeting & Header */
+.agile-home-greeting {
+  font-size: 15px;
+  color: #e3e3e3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.agile-home-title {
+  font-family: 'DM Serif Text', 'Playfair Display', Georgia, serif;
+  font-size: 36px;
+  font-weight: 400;
+  margin: 6px 0 28px 0;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+/* Stats Row: 2 Left Cards + 1 Right Streak Card */
+.agile-stats-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.agile-stats-left {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 24px 22px;
-  overflow-y: auto;
+  gap: 16px;
+}
+
+.agile-stat-card {
+  background-color: var(--agile-card-bg);
+  border-radius: 12px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   box-sizing: border-box;
 }
 
-/* Custom scrollbar for floating panel */
-.agile-floating-panel::-webkit-scrollbar {
-  width: 5px;
-}
-.agile-floating-panel::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 3px;
+.agile-stat-card--total {
+  height: 120px;
 }
 
-/* ── Session Title Header (W1 ✎) ── */
+.agile-stat-card--lowest {
+  height: 100px;
+}
+
+.agile-stat-val {
+  font-size: 34px;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+.agile-stat-val--group {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.agile-stat-val-sub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 400;
+}
+
+.agile-stat-lbl {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 10px;
+}
+
+/* Streak Activity Card */
+.agile-streak-card {
+  background-color: var(--agile-card-bg);
+  border-radius: 12px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.agile-streak-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.agile-streak-title {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.agile-streak-longest {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+}
+
+/* Github-style Calendar Streak Grid */
+.agile-streak-calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.agile-streak-months {
+  display: flex;
+  padding-left: 32px;
+  justify-content: space-between;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 4px;
+}
+
+.agile-streak-body {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.agile-streak-days {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 80px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.agile-streak-blocks-matrix {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  gap: 5px;
+  flex: 1;
+}
+
+.agile-streak-col {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.agile-streak-block {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background-color: var(--agile-streak-empty);
+}
+
+.agile-streak-block--active {
+  background-color: var(--agile-primary-dark) !important;
+}
+
+/* Sessions Section Header */
+.agile-sessions-heading {
+  font-family: 'DM Serif Text', 'Playfair Display', Georgia, serif;
+  font-size: 32px;
+  font-weight: 400;
+  margin-bottom: 20px;
+  color: #ffffff;
+}
+
+/* Big Start Session CTA Bar */
+.agile-start-cta {
+  width: 100%;
+  height: 60px;
+  background-color: var(--agile-card-bg);
+  border-radius: 9999px;
+  padding: 6px 8px 6px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  box-sizing: border-box;
+  margin-bottom: 24px;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.agile-start-cta:hover {
+  background-color: #222225;
+  border-color: rgba(86, 211, 100, 0.3);
+}
+
+.agile-start-cta__text {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+.agile-start-cta__btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background-color: var(--agile-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000000;
+  transition: transform 0.2s ease;
+}
+
+.agile-start-cta:hover .agile-start-cta__btn {
+  transform: scale(1.06);
+}
+
+.agile-start-cta__btn .material-symbols-outlined {
+  font-size: 22px;
+}
+
+/* Past Sessions List Rows */
+.agile-home-sessions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.agile-home-session-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background-color: transparent;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.agile-home-session-row:hover {
+  background-color: var(--agile-card-bg);
+}
+
+.agile-home-session-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.agile-home-session-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.agile-home-session-meta {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.agile-home-session-date {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   AGILE CURRENT / PAST SESSION VIEW (Image 2)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.agile-session-view-container {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Left Panel (Dark Mode) ── */
+.agile-floating-panel {
+  position: relative;
+  z-index: 10;
+  min-width: 480px;
+  width: 480px;
+  max-width: 42vw;
+  height: 100%;
+  background-color: #070708;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 16px 24px 24px 24px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  scrollbar-width: none;
+}
+
+.agile-floating-panel::-webkit-scrollbar {
+  display: none;
+}
+
+/* Top Header Bar inside Left Panel (Image 2) */
+.agile-inpanel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.agile-inpanel-header__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.agile-back-btn {
+  background: none;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.agile-back-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.agile-back-btn .material-symbols-outlined {
+  font-size: 20px;
+}
+
+.agile-inpanel-icon-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.agile-inpanel-icon-btn:hover {
+  color: #ffffff;
+}
+
+.agile-inpanel-icon-btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.agile-inpanel-save-btn {
+  background-color: #ffffff;
+  color: #000000;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.agile-inpanel-save-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.agile-inpanel-save-btn .material-symbols-outlined {
+  font-size: 16px;
+}
+
+/* Session Title Header (W1 ✎) */
 .session-title-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-left: 4px;
+  margin-top: 4px;
 }
 
 .session-title-header__name {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
   color: #ffffff;
   outline: none;
   border-bottom: 1px solid transparent;
-  transition: border-color 0.2s ease;
 }
 
 .session-title-header__name:focus {
-  border-bottom-color: #00E676;
+  border-bottom-color: var(--agile-primary-dark);
 }
 
 .session-title-header__edit-btn {
@@ -87,53 +457,32 @@
   cursor: pointer;
   padding: 2px 4px;
   border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s ease;
 }
 
 .session-title-header__edit-btn:hover {
   color: #ffffff;
 }
 
-.session-title-header__edit-btn .material-symbols-outlined {
-  font-size: 16px;
-}
-
-/* ── Sections inside Floating Panel ── */
+/* Left Panel Inner Cards */
 .agile-section {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.agile-section--notes {
-  flex: 1;
-  min-height: 180px;
-}
-
 .agile-section__label {
   font-size: 13px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
-  padding-left: 4px;
-  letter-spacing: -0.1px;
+  color: rgba(255, 255, 255, 0.8);
 }
 
-/* ── Inner Dark Cards (Lessons, Notes) ── */
 .agile-inner-card {
-  background-color: #121213;
+  background-color: var(--agile-card-bg);
   border-radius: 12px;
-  padding: 18px 20px;
+  padding: 16px 18px;
   box-sizing: border-box;
 }
 
-.agile-inner-card--lessons {
-  border: 1px solid rgba(255, 255, 255, 0.03);
-}
-
-/* Bullet list inside "Lessons from last:" */
 .agile-bullet-list {
   list-style: none;
   padding: 0;
@@ -158,7 +507,27 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* ── Embedded RecordingTimer Widget Override ── */
+.agile-notes-input {
+  width: 100%;
+  min-height: 140px;
+  background-color: var(--agile-card-bg);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px 18px;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.agile-notes-input:focus {
+  border-color: var(--agile-primary-dark);
+}
+
+/* Embedded RecordingTimer Widget Override */
 .agile-inner-card--recorder {
   padding: 0;
   background: transparent;
@@ -170,285 +539,47 @@
 
 .agile-inner-card--recorder .recorder-widget {
   width: 100% !important;
-  height: 230px !important;
+  height: 220px !important;
   border-radius: 12px;
-  background-color: #121213 !important;
+  background-color: var(--agile-card-bg) !important;
   border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-#agile-history-recorder-container .recorder-widget {
-  height: 280px !important;
 }
 
 .agile-inner-card--recorder .recorder-widget__left,
 .agile-inner-card--recorder .recorder-widget__right {
-  background-color: #121213 !important;
+  background-color: var(--agile-card-bg) !important;
 }
 
-.agile-inner-card--recorder .recorder-widget__right {
-  width: 160px !important;
-  padding: 16px 12px !important;
-  gap: 20px !important;
-}
-
-.agile-inner-card--recorder .recorder-widget__dial-container {
-  width: 120px !important;
-  height: 120px !important;
-}
-
-.agile-inner-card--recorder .recorder-widget__outer-ring {
-  width: 120px !important;
-  height: 120px !important;
-}
-
-.agile-inner-card--recorder .recorder-widget__record-btn {
-  width: 38px !important;
-  height: 38px !important;
-}
-
-.agile-inner-card--recorder .recorder-widget__timer-display {
-  font-size: 24px !important;
-}
-
-/* ── Take Notes Textarea ── */
-.agile-section--notes {
+/* ── Right Panel (Light Theme AI Canvas Frame - Image 2) ── */
+.agile-right-canvas-frame {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 140px;
-}
-
-.agile-inner-card--notes {
-  flex: 1;
-  padding: 0;
-  background: transparent;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.agile-notes-input {
-  flex: 1;
-  width: 100%;
   height: 100%;
-  min-height: 120px;
-  background-color: #121213;
-  border: 1px solid rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  padding: 16px 18px;
-  color: #ffffff;
-  font-family: inherit;
-  font-size: 13px;
-  line-height: 1.6;
-  resize: none;
-  outline: none;
-  box-sizing: border-box;
-  transition: border-color 0.2s ease;
-}
-
-.agile-notes-input:focus {
-  border-color: rgba(0, 230, 118, 0.4);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   RIGHT CANVAS AREA & FLOATING PROMPT BAR
-   ═══════════════════════════════════════════════════════════════════════════ */
-.agile-canvas-space {
+  background-color: #ffffff;
+  border-top-left-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   position: relative;
-  z-index: 10;
-  flex: 1;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  padding-bottom: 32px;
-  box-sizing: border-box;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3);
+  color: #1a1a1a;
 }
 
-/* ── Floating Prompt Input Bar ── */
-.agile-prompt-wrapper {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  padding: 0 40px;
-}
-
-.agile-prompt-bar {
-  width: 800px;
-  max-width: 100%;
-  min-width: 40%;
-  height: 56px;
-  background: rgba(28, 28, 32, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: none;
-  border-radius: 30px;
-  padding: 4px 6px 4px 22px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: none;
-  transition: all 0.2s ease;
-}
-
-.agile-prompt-bar:focus-within {
-  box-shadow: none;
-}
-
-.agile-prompt-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #ffffff;
-  font-family: inherit;
-  font-size: 15px;
-  padding-right: 12px;
-}
-
-.agile-prompt-input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
-}
-
-/* Circular Send Button (Default Idle: rgba(28, 28, 32, 0.85), Active: #00C853) */
-.agile-prompt-send-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background-color: rgba(28, 28, 32, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.3);
-  cursor: default;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
-  box-shadow: none;
-  outline: none;
-}
-
-/* Active State (When user types text in prompt bar) */
-.agile-prompt-send-btn.is-active {
-  background-color: #00C853;
-  border-color: transparent;
-  color: #ffffff;
-  cursor: pointer;
-  box-shadow: 0 0 14px rgba(0, 200, 83, 0.4);
-}
-
-.agile-prompt-send-btn.is-active:hover {
-  transform: scale(1.06);
-  background-color: #00E676;
-  box-shadow: 0 0 20px rgba(0, 230, 118, 0.6);
-}
-
-.agile-prompt-send-btn.is-active:active {
-  transform: scale(0.95);
-}
-
-.agile-prompt-send-btn .material-symbols-outlined {
-  font-size: 20px;
-  transform: rotate(-30deg) translate(1px, -1px);
-}
-
-/* Hide 4 preset duration buttons inside embedded left panel recorder */
-.agile-inner-card--recorder .recorder-widget__presets-grid {
-  display: none !important;
-}
-
-/* Session Title Header Save Button */
-.session-title-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-left: 4px;
-}
-
-.session-title-header__left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.session-title-header__save-btn {
-  background: none;
-  border: none;
-  color: #00E676;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 4px 10px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-2px);
-}
-
-.session-title-header__save-btn.is-visible {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-.session-title-header__save-btn:hover {
-  color: #69F0AE;
-  background: rgba(0, 230, 118, 0.1);
-}
-
-/* Taken Notes Section Label Row & Save Button */
-.agile-section__label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-
-.agile-notes-save-btn {
-  background: none;
-  border: none;
-  color: #00E676;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 2px 8px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.agile-notes-save-btn.is-visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.agile-notes-save-btn:hover {
-  color: #69F0AE;
-  background: rgba(0, 230, 118, 0.1);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   PRE-PROMPTING QUESTIONS FEED (Right Canvas Area)
-   ═══════════════════════════════════════════════════════════════════════════ */
 .agile-questions-feed {
   flex: 1;
-  width: 800px;
-  max-width: 100%;
-  padding: 32px 20px 40px 20px;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 32px 100px 32px;
   display: flex;
   flex-direction: column;
   gap: 36px;
   overflow-y: auto;
   box-sizing: border-box;
-  margin-bottom: 20px;
   scrollbar-width: none;
-  -ms-overflow-style: none;
 }
 
 .agile-questions-feed::-webkit-scrollbar {
-  display: none !important;
+  display: none;
 }
 
 .agile-q-card {
@@ -470,12 +601,12 @@
 }
 
 .agile-q-title {
-  font-size: 19px;
-  font-weight: 400;
-  color: #ffffff;
-  letter-spacing: -0.2px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #2c2c2e;
 }
 
+/* Pills Selection Row (Light Mode styling with Green Active #56D364 / #008A25) */
 .agile-q-pills-row {
   display: flex;
   flex-wrap: wrap;
@@ -483,230 +614,192 @@
 }
 
 .agile-q-pill {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid transparent;
-  color: rgba(255, 255, 255, 0.85);
+  background-color: #eaeaea;
+  color: #333333;
+  border: none;
+  border-radius: 18px;
   padding: 8px 18px;
-  border-radius: 20px;
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   outline: none;
 }
 
 .agile-q-pill:hover {
-  background: rgba(255, 255, 255, 0.14);
-  color: #ffffff;
+  background-color: #dedede;
 }
 
 .agile-q-pill--selected {
-  background: rgba(0, 200, 83, 0.12) !important;
-  border: 1px solid #00C853 !important;
-  color: #00E676 !important;
-  font-weight: 500;
+  background-color: var(--agile-primary-dark) !important;
+  color: #000000 !important;
+  font-weight: 600 !important;
 }
 
-/* Question 4 Time Picker Layout (Image 3) */
+/* Time Picker Card inside Light Canvas */
 .agile-q-time-card {
-  width: 320px;
-  background-color: #121213;
+  background-color: #f4f4f4;
   border-radius: 16px;
-  padding: 20px 24px;
+  padding: 20px;
   display: flex;
   align-items: center;
-  gap: 28px;
-  box-sizing: border-box;
+  gap: 24px;
 }
 
 .agile-q-dial-preview {
   width: 90px;
   height: 90px;
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .agile-q-dial-circle {
-  width: 86px;
-  height: 86px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  border: 1.5px solid #cccccc;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box;
 }
 
 .agile-q-dial-dot {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background-color: #d1d1d1;
+  background-color: #777777;
 }
-
-.agile-q-dial-tick {
-  position: absolute;
-  width: 7px;
-  height: 1px;
-  background-color: rgba(255, 255, 255, 0.4);
-  top: 50%;
-  left: 50%;
-}
-
-.agile-q-dial-tick--1 { transform: translate(-50%, -50%) rotate(-120deg) translate(36px, 0); }
-.agile-q-dial-tick--2 { transform: translate(-50%, -50%) rotate(0deg) translate(36px, 0); }
-.agile-q-dial-tick--3 { transform: translate(-50%, -50%) rotate(120deg) translate(36px, 0); }
 
 .agile-q-time-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
   flex: 1;
 }
 
-.agile-q-pill--time {
-  padding: 12px 0 !important;
-  text-align: center;
-  border-radius: 14px !important;
-  background: #000000 !important;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  font-size: 16px !important;
-}
-
-.agile-q-pill--time.agile-q-pill--selected {
-  border-color: #00C853 !important;
-  background: #000000 !important;
-}
-
-/* Past Session View Styles (Image 2 & 4) */
-.agile-prompt-showcase-line {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.65);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 0 4px;
-}
-
-.agile-history-pill {
-  display: inline-block;
-  align-self: flex-start;
-  padding: 6px 14px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  font-size: 13px;
-  color: #ffffff;
-}
-
-.agile-inner-card--history-player {
-  background-color: #121213;
-  border-radius: 12px;
-  padding: 16px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.agile-history-player-left {
-  flex: 1;
-  height: 120px;
-  position: relative;
-  background: #000000;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.agile-history-player-left canvas {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.agile-history-player-right {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.agile-history-skip-row {
-  display: flex;
-  gap: 8px;
-}
-
-.agile-skip-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.85);
-  padding: 6px 10px;
-  border-radius: 10px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.agile-skip-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
-}
-
-/* Chat Messages in Right Canvas Space (Image 4) */
+/* System Prompt & AI Chat Messages inside Light Canvas */
 .agile-chat-msg {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  animation: fadeInQuestion 0.3s ease forwards;
+  max-width: 100%;
 }
 
 .agile-chat-msg--system {
-  align-self: flex-start;
-  width: 100%;
+  background-color: #f7f7f8;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e5e5e5;
 }
 
 .agile-chat-sublabel {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+  font-weight: 500;
+  color: #666666;
 }
 
 .agile-chat-prompt-body {
-  font-size: 17px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #111111;
   font-weight: 500;
-  line-height: 1.5;
-  color: #ffffff;
-  max-width: 90%;
-}
-
-.agile-chat-msg--user {
-  align-self: flex-end;
-  align-items: flex-end;
-  max-width: 75%;
-}
-
-.agile-chat-bubble {
-  background: rgba(35, 35, 38, 0.85);
-  border-radius: 16px;
-  padding: 14px 18px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.agile-chat-msg--ai {
-  align-self: flex-start;
-  max-width: 80%;
-}
-
-.agile-chat-text {
-  font-size: 15px;
-  line-height: 1.5;
-  color: #ffffff;
 }
 
 .agile-chat-timestamp {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.35);
-  padding: 0 4px;
+  color: #999999;
+  align-self: flex-end;
+  margin-top: 4px;
+}
+
+.agile-chat-msg--user {
+  align-self: flex-end;
+  max-width: 75%;
+}
+
+.agile-chat-bubble {
+  background-color: var(--agile-primary-dark);
+  color: #000000;
+  font-weight: 500;
+  border-radius: 18px 18px 4px 18px;
+  padding: 12px 18px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.agile-chat-msg--ai {
+  align-self: flex-start;
+  max-width: 85%;
+  background-color: #f4f4f5;
+  color: #111111;
+  border-radius: 18px 18px 18px 4px;
+  padding: 14px 20px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Light Mode Input Bar at Bottom of Canvas */
+.agile-prompt-wrapper {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0 24px;
+  box-sizing: border-box;
+  z-index: 20;
+}
+
+.agile-prompt-bar {
+  width: 760px;
+  max-width: 100%;
+  height: 56px;
+  background-color: #e5e5e5;
+  border-radius: 9999px;
+  padding: 4px 8px 4px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.agile-prompt-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #111111;
+  font-family: inherit;
+  font-size: 15px;
+}
+
+.agile-prompt-input::placeholder {
+  color: #888888;
+}
+
+.agile-prompt-send-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: transparent;
+  border: none;
+  color: #777777;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.agile-prompt-send-btn.is-active {
+  background-color: var(--agile-primary-dark);
+  color: #000000;
+}
+
+.agile-prompt-send-btn .material-symbols-outlined {
+  font-size: 20px;
 }

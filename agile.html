@@ -20,20 +20,23 @@
 
 <body>
   <div class="app-shell" id="app-shell">
-    <!-- ═══════ TOP BAR ═══════ -->
+    <!-- ═══════ CLEAN TOP BAR (Image 1) ═══════ -->
     <header class="topbar" id="topbar">
       <div class="topbar__left">
         <div class="topbar__logo" id="logo" title="Design System AI Engine">
           <svg width="28" height="24" viewBox="0 0 28 24" fill="none">
-            <rect x="2" y="4" width="8" height="16" rx="2" fill="#4CAF50" />
-            <rect x="12" y="8" width="6" height="12" rx="2" fill="#66BB6A" />
-            <rect x="20" y="2" width="6" height="18" rx="2" fill="#81C784" />
+            <rect x="2" y="4" width="8" height="16" rx="2" fill="#56D364" />
+            <rect x="12" y="8" width="6" height="12" rx="2" fill="#56D364" />
+            <rect x="20" y="2" width="6" height="18" rx="2" fill="#56D364" />
           </svg>
         </div>
-        <button class="topbar__icon-btn" id="menu-btn" aria-label="Open sidebar" title="Chat History & Topics">
-          <span class="material-symbols-outlined">menu</span>
+        
+        <!-- Document / Quiz Icon -->
+        <button class="topbar__icon-btn" id="quiz-page-btn" aria-label="Go to Quiz" title="Default Quiz Version">
+          <span class="material-symbols-outlined" style="font-size: 18px;">quiz</span>
         </button>
-        <!-- ═══ Mode Switcher (Quiz / Agile) ═══ -->
+
+        <!-- ═══ Mode Switcher (Agile Mode Active) ═══ -->
         <div class="mode-switcher" id="mode-switcher" title="Switch between Quiz & Agile modes">
           <div class="mode-switcher__active mode-switcher__active--agile" id="mode-switcher-trigger">
             <span class="mode-switcher__icon">
@@ -41,144 +44,193 @@
             </span>
             <span class="mode-switcher__label" id="mode-switcher-label">Agile</span>
           </div>
-          <div class="mode-switcher__controls">
-            <span class="material-symbols-outlined mode-switcher__dots">more_vert</span>
-            <span class="material-symbols-outlined mode-switcher__clock">schedule</span>
-          </div>
-          <!-- Dropdown -->
           <div class="mode-switcher__dropdown" id="mode-switcher-dropdown">
             <button class="mode-switcher__option" id="mode-opt-quiz" data-mode="quiz">
               <span class="mode-switcher__opt-icon">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                  <rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                  <text x="8" y="11.5" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor">?</text>
-                </svg>
+                <span class="material-symbols-outlined" style="font-size: 14px;">quiz</span>
               </span>
               <span class="mode-switcher__opt-label">Default Quiz Version</span>
-              <span class="material-symbols-outlined mode-switcher__opt-check">check</span>
             </button>
             <button class="mode-switcher__option mode-switcher__option--active" id="mode-opt-agile" data-mode="agile">
               <span class="mode-switcher__opt-icon">
                 <span class="material-symbols-outlined" style="font-size: 14px;">bolt</span>
               </span>
-              <span class="mode-switcher__opt-label">Agile</span>
-              <span class="material-symbols-outlined mode-switcher__opt-check">check</span>
+              <span class="mode-switcher__opt-label">Agile Whiteboard</span>
             </button>
           </div>
         </div>
       </div>
       <div class="topbar__right">
         <span class="topbar__time" id="current-time">07:00 AM</span>
-        <button class="topbar__icon-btn topbar__star" id="settings-trigger-btn" aria-label="AI Engine Settings"
-          title="AI Provider & Settings">
-          <span class="material-symbols-outlined">kid_star</span>
-        </button>
         <button class="topbar__icon-btn" id="more-btn" aria-label="More options" title="Page Options">
           <span class="material-symbols-outlined">more_horiz</span>
         </button>
       </div>
     </header>
 
-    <!-- ═══════ OVERLAY BACKDROP ═══════ -->
-    <div class="overlay" id="overlay" aria-hidden="true"></div>
-
-    <!-- ═══════ LEFT SIDEBAR ═══════ -->
-    <aside class="sidebar" id="sidebar" aria-label="Chat sidebar">
-      <!-- Header -->
-      <div class="sidebar__header">
-        <div class="sidebar__logo">
-          <svg width="31" height="27" viewBox="0 0 31 27" fill="none">
-            <rect x="2" y="4" width="9" height="19" rx="2" fill="#4CAF50" />
-            <rect x="13" y="8" width="7" height="14" rx="2" fill="#66BB6A" />
-            <rect x="22" y="2" width="7" height="21" rx="2" fill="#81C784" />
-          </svg>
-        </div>
-        <button class="sidebar__close-btn" id="sidebar-close-btn" aria-label="Close sidebar">
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      </div>
-
-      <!-- Tabs -->
-      <div class="sidebar__tabs">
-        <button class="sidebar__tab sidebar__tab--active" id="tab-all-chats">All Sessions</button>
-        <button class="sidebar__tab" id="tab-favorites">
-          <span class="material-symbols-outlined sidebar__tab-icon">kid_star</span>
-          <span>Starred</span>
-        </button>
-      </div>
-
-      <!-- Chat History / Modules -->
-      <div class="sidebar__history" id="sidebar-history">
-        <div class="sidebar__history-section" id="user-history-section">
-          <div class="sidebar__section-header">
-            <span class="material-symbols-outlined sidebar__section-icon">history</span>
-            <span class="sidebar__section-title">Agile Session History</span>
-          </div>
-          <div class="sidebar__session-list" id="user-session-list">
-            <!-- Dynamically populated by agile-session.js -->
-          </div>
-        </div>
-      </div>
-    </aside>
-
-    <!-- ═══════ MAIN CONTENT: FLOATING AGILE WHITEBOARD ═══════ -->
+    <!-- ═══════ MAIN WORKSPACE AREA ═══════ -->
     <main class="agile-workspace" id="agile-workspace">
       <!-- Dark Wallpaper Ambient Background -->
       <div class="agile-wallpaper-bg" aria-hidden="true"></div>
 
-      <!-- ─── FLOATING LEFT CARD CONTAINER ─── -->
-      <div class="agile-floating-panel" id="agile-floating-panel">
-        <!-- Session Title Header (W1 ✎) -->
-        <div class="session-title-header">
-          <div class="session-title-header__left">
-            <h2 class="session-title-header__name" id="session-title" contenteditable="true" spellcheck="false">W1</h2>
-            <button class="session-title-header__edit-btn" id="edit-title-btn" aria-label="Edit title" title="Edit session title">
-              <span class="material-symbols-outlined">edit</span>
-            </button>
+      <!-- ═══════════════════════════════════════════════════════════════════
+           PAGE 1: AGILE HOMEPAGE VIEW (Image 1)
+           ═══════════════════════════════════════════════════════════════════ -->
+      <div class="agile-homepage-container" id="agile-homepage-view">
+        <!-- Header Greeting -->
+        <div class="agile-home-greeting">
+          <span>👋</span> <span>Hi User_Name</span>
+        </div>
+        <h1 class="agile-home-title">See your growth...</h1>
+
+        <!-- Stats Grid (Total session, Lowest time, Streak card) -->
+        <div class="agile-stats-grid">
+          <!-- Left Column (Total sessions & Lowest time) -->
+          <div class="agile-stats-left">
+            <div class="agile-stat-card agile-stat-card--total">
+              <div class="agile-stat-val" id="stat-total-sessions">93</div>
+              <div class="agile-stat-lbl">Total session</div>
+            </div>
+            <div class="agile-stat-card agile-stat-card--lowest">
+              <div class="agile-stat-val-sub" id="stat-lowest-times">
+                <span style="font-size: 20px; font-weight: 600; color: #fff;">93</span> <span style="font-size: 12px; color: rgba(255,255,255,0.6);">/30 mins</span> &nbsp;
+                <span style="font-size: 20px; font-weight: 600; color: #fff;">93</span> <span style="font-size: 12px; color: rgba(255,255,255,0.6);">/45 mins</span> &nbsp;
+                <span style="font-size: 20px; font-weight: 600; color: #fff;">93</span> <span style="font-size: 12px; color: rgba(255,255,255,0.6);">/60 mins</span>
+              </div>
+              <div class="agile-stat-lbl">Lowest time taken</div>
+            </div>
           </div>
-          <button class="session-title-header__save-btn" id="save-session-btn" title="Save session to history">Save</button>
+
+          <!-- Right Column (Streak Activity Matrix Card) -->
+          <div class="agile-streak-card">
+            <div class="agile-streak-header">
+              <span class="agile-streak-title">Streak</span>
+              <span class="agile-streak-longest" id="stat-longest-streak">Longest - 29 days</span>
+            </div>
+            <div class="agile-streak-calendar">
+              <div class="agile-streak-months">
+                <span>Sep</span>
+                <span>Oct</span>
+                <span>Nov</span>
+                <span>Dec</span>
+              </div>
+              <div class="agile-streak-body">
+                <div class="agile-streak-days">
+                  <span>Mon</span>
+                  <span>Wed</span>
+                  <span>Fri</span>
+                </div>
+                <div class="agile-streak-blocks-matrix" id="agile-streak-matrix">
+                  <!-- Dynamically populated by JS -->
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Section 1: Lessons from last -->
-        <div class="agile-section">
-          <div class="agile-section__label">Lessons from last:</div>
-          <div class="agile-inner-card agile-inner-card--lessons">
-            <ul class="agile-bullet-list">
-              <li>Say the words clearly</li>
-              <li>Take pauses over fillers works</li>
-              <li>Finish first sentence then go to another</li>
-            </ul>
-          </div>
+        <!-- Sessions Section -->
+        <h2 class="agile-sessions-heading">Sessions</h2>
+
+        <!-- Big Start Session CTA Bar -->
+        <div class="agile-start-cta" id="agile-start-new-session-cta">
+          <span class="agile-start-cta__text">Ready for a New...</span>
+          <button class="agile-start-cta__btn" aria-label="Start new session">
+            <span class="material-symbols-outlined">send</span>
+          </button>
         </div>
 
-        <!-- Section 2: Timer & Recorder -->
-        <div class="agile-section">
-          <div class="agile-section__label">Timer & Recorder</div>
-          <div class="agile-inner-card agile-inner-card--recorder">
-            <div id="agile-recorder-container"></div>
-          </div>
-        </div>
-
-        <!-- Section 3: Take notes -->
-        <div class="agile-section agile-section--notes">
-          <div class="agile-section__label">Take notes:</div>
-          <div class="agile-inner-card agile-inner-card--notes">
-            <textarea class="agile-notes-input" id="agile-notes-input" placeholder=""></textarea>
-          </div>
+        <!-- Past Sessions List -->
+        <div class="agile-home-sessions-list" id="agile-homepage-session-list">
+          <!-- Dynamically populated by agile-session.js -->
         </div>
       </div>
 
-      <!-- ─── RIGHT CANVAS AREA & FLOATING PROMPT BAR ─── -->
-      <div class="agile-canvas-space" id="agile-canvas-space">
-        <!-- Floating Prompt Input Bar at Bottom Right -->
-        <div class="agile-prompt-wrapper">
-          <div class="agile-prompt-bar">
-            <input type="text" class="agile-prompt-input" id="agile-prompt-input" placeholder="Have any question? do ask" autocomplete="off" />
-            <button class="agile-prompt-send-btn" id="agile-prompt-send-btn" aria-label="Send prompt">
-              <span class="material-symbols-outlined">send</span>
+
+      <!-- ═══════════════════════════════════════════════════════════════════
+           PAGE 2: CURRENT / PAST SESSION VIEW (Image 2)
+           (Hidden initially on Homepage, displayed when starting/viewing session)
+           ═══════════════════════════════════════════════════════════════════ -->
+      <div class="agile-session-view-container" id="agile-session-view" style="display: none;">
+        
+        <!-- ─── LEFT PANEL (Dark Mode) ─── -->
+        <div class="agile-floating-panel" id="agile-floating-panel">
+          <!-- Top Header inside Left Panel -->
+          <div class="agile-inpanel-header">
+            <div class="agile-inpanel-header__left">
+              <button class="agile-back-btn" id="agile-back-to-home-btn" title="Back to Homepage">
+                <span class="material-symbols-outlined">arrow_back</span>
+              </button>
+              <button class="agile-inpanel-icon-btn" title="Star session">
+                <span class="material-symbols-outlined" style="color: #FFD700;">grade</span>
+              </button>
+              <button class="agile-inpanel-icon-btn" title="Options">
+                <span class="material-symbols-outlined">more_horiz</span>
+              </button>
+            </div>
+            <!-- Permanent Save Session Button -->
+            <button class="agile-inpanel-save-btn" id="save-session-btn" title="Save current session">
+              <span class="material-symbols-outlined">save</span>
+              <span>Save the session</span>
             </button>
           </div>
+
+          <!-- Session Title Header (W1 ✎) -->
+          <div class="session-title-header">
+            <div class="session-title-header__left" style="display: flex; align-items: center; gap: 8px;">
+              <h2 class="session-title-header__name" id="session-title" contenteditable="true" spellcheck="false">W1</h2>
+              <button class="session-title-header__edit-btn" id="edit-title-btn" aria-label="Edit title" title="Edit session title">
+                <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Section 1: Lessons from last -->
+          <div class="agile-section">
+            <div class="agile-section__label">Lessons from last:</div>
+            <div class="agile-inner-card agile-inner-card--lessons">
+              <ul class="agile-bullet-list">
+                <li>Say the words clearly</li>
+                <li>Take pauses over fillers works</li>
+                <li>Finish first sentence then go to another</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Section 2: Timer & Recorder -->
+          <div class="agile-section">
+            <div class="agile-section__label">Timer & Recorder</div>
+            <div class="agile-inner-card agile-inner-card--recorder">
+              <div id="agile-recorder-container"></div>
+            </div>
+          </div>
+
+          <!-- Section 3: Take notes -->
+          <div class="agile-section agile-section--notes" style="flex: 1;">
+            <div class="agile-section__label">Take notes:</div>
+            <div class="agile-inner-card agile-inner-card--notes" style="flex: 1;">
+              <textarea class="agile-notes-input" id="agile-notes-input" placeholder=""></textarea>
+            </div>
+          </div>
         </div>
+
+        <!-- ─── RIGHT PANEL (Light Theme AI Canvas Frame - Image 2) ─── -->
+        <div class="agile-right-canvas-frame" id="agile-canvas-space">
+          <!-- Pre-Prompting Questions & AI Chat Container -->
+          <div class="agile-questions-feed" id="agile-questions-feed">
+            <!-- Dynamically populated by agile-session.js -->
+          </div>
+
+          <!-- Light-theme Chat Input Bar at Bottom -->
+          <div class="agile-prompt-wrapper">
+            <div class="agile-prompt-bar">
+              <input type="text" class="agile-prompt-input" id="agile-prompt-input" placeholder="Have any question? do ask" autocomplete="off" />
+              <button class="agile-prompt-send-btn" id="agile-prompt-send-btn" aria-label="Send prompt">
+                <span class="material-symbols-outlined">send</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </main>
   </div>
@@ -190,8 +242,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       initClock();
       initModeSwitcher();
-      initRecorderWidget();
-      initEditableTitle();
       initPromptInput();
     });
 
@@ -216,7 +266,7 @@
       const switcher = document.getElementById('mode-switcher');
       const dropdown = document.getElementById('mode-switcher-dropdown');
       const quizOpt = document.getElementById('mode-opt-quiz');
-      const agileOpt = document.getElementById('mode-opt-agile');
+      const quizBtn = document.getElementById('quiz-page-btn');
 
       if (!switcher || !dropdown) return;
 
@@ -233,29 +283,15 @@
         });
       }
 
+      if (quizBtn) {
+        quizBtn.addEventListener('click', () => {
+          window.location.href = 'index.html';
+        });
+      }
+
       document.addEventListener('click', (e) => {
         if (!switcher.contains(e.target)) dropdown.classList.remove('mode-switcher__dropdown--open');
       });
-    }
-
-    /* ── Initialize RecordingTimer Widget ── */
-    function initRecorderWidget() {
-      window.AgileRecorderInstance = new RecordingTimer('#agile-recorder-container', {
-        onSave: (payload) => {
-          console.log('Agile Whiteboard Audio Saved:', payload);
-        }
-      });
-    }
-
-    /* ── Editable Session Title ── */
-    function initEditableTitle() {
-      const titleEl = document.getElementById('session-title');
-      const editBtn = document.getElementById('edit-title-btn');
-      if (editBtn && titleEl) {
-        editBtn.addEventListener('click', () => {
-          titleEl.focus();
-        });
-      }
     }
 
     /* ── Prompt Input Button Active State ── */

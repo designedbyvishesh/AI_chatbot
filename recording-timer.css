@@ -205,12 +205,12 @@
 }
 
 .recorder-widget__record-btn.is-recording {
-  background-color: #00C853 !important;
+  background-color: #56D364 !important;
 }
 
 .recorder-widget__record-btn.is-recording:hover {
   transform: scale(1.08);
-  background-color: #00E676 !important;
+  background-color: #69F0AE !important;
 }
 
 .recorder-widget__record-btn.is-paused {
@@ -317,6 +317,6 @@
 }
 
 .recorder-widget__timer-display.is-overtime {
-  color: #00E676;
-  text-shadow: 0 0 12px rgba(0, 230, 118, 0.4);
+  color: #56D364;
+  text-shadow: 0 0 12px rgba(86, 211, 100, 0.4);
 }
