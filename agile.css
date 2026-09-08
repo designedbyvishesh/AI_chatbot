@@ -275,7 +275,7 @@
 }
 
 .agile-prompt-bar {
-  width: 680px;
+  width: 800px;
   max-width: 100%;
   min-width: 40%;
   height: 56px;
@@ -434,7 +434,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 .agile-questions-feed {
   flex: 1;
-  width: 680px;
+  width: 800px;
   max-width: 100%;
   padding: 32px 20px 40px 20px;
   display: flex;

@@ -381,6 +381,7 @@
           if (val === '30 min') window.AgileRecorderInstance.setDuration(1800);
           else if (val === '45 min') window.AgileRecorderInstance.setDuration(2700);
           else if (val === '60 min') window.AgileRecorderInstance.setDuration(3600);
+          else if (val === 'No') window.AgileRecorderInstance.setDuration(0);
         }
 
         if (stepNum < QUESTIONS.length) {
@@ -410,6 +411,7 @@
 
     // Save session payload to LocalStorage & MongoDB
     const titleEl = document.getElementById('session-title');
+    const timerDisplayEl = window.AgileRecorderInstance ? window.AgileRecorderInstance.dom.timerDisplay.textContent : '- 00:00';
     const newSessionPayload = {
       id: `agile-${Date.now()}`,
       title: titleEl ? titleEl.textContent.trim() : 'W1',
@@ -417,8 +419,8 @@
       answers: sessionState.answers,
       difficulty: sessionState.answers.difficulty || 'Normal',
       category: sessionState.answers.category || 'Random',
-      duration: sessionState.answers.duration || '45 min',
-      recordedTime: '- 45:00',
+      duration: sessionState.answers.duration || 'No',
+      recordedTime: sessionState.answers.duration === 'No' ? '- 00:00' : timerDisplayEl,
       notes: sessionState.notes,
       chatHistory: [
         {
@@ -432,8 +434,8 @@
 
     saveNewSessionToAPI(newSessionPayload);
 
-    // AUTO-START RECORDING IMMEDIATELY ON DONE!
-    if (window.AgileRecorderInstance) {
+    // AUTO-START RECORDING IMMEDIATELY ON DONE (only if duration was selected and is NOT 'No')
+    if (window.AgileRecorderInstance && sessionState.answers.duration && sessionState.answers.duration !== 'No') {
       window.AgileRecorderInstance.startRecording();
     }
   }

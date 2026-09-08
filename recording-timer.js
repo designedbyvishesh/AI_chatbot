@@ -24,8 +24,8 @@ class RecordingTimer {
     this.state = 'idle';
 
     // Timer settings (in seconds)
-    this.selectedPresetMinutes = 45; // Default 45 min
-    this.remainingSeconds = 45 * 60;
+    this.selectedPresetMinutes = 0; // Default 0 min until selected from agile-q-time-card
+    this.remainingSeconds = 0;
     this.elapsedSeconds = 0;
     this.elapsedSecondsFloat = 0.0;
     this.timerInterval = null;
@@ -112,7 +112,7 @@ class RecordingTimer {
           </div>
 
           <!-- Timer Display (- MM:SS or + MM:SS) -->
-          <div class="recorder-widget__timer-display" id="rw-timer-display">- 45:00</div>
+          <div class="recorder-widget__timer-display" id="rw-timer-display">- 00:00</div>
         </div>
       </div>
     `;
