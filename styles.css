@@ -1,26 +1,18 @@
+@import url('tokens.css');
+
 /* ═══════════════════════════════════════════════
-   DESIGN TOKENS & PALETTE (Matching Figma)
+   DESIGN TOKENS & PALETTE (Derived from Agile)
    ═══════════════════════════════════════════════ */
 :root {
-  /* Colors */
-  --bg-primary: #0a0a0a;
-  --bg-topbar: #181818;
-  --bg-card: #0e0e0e;
-  --bg-card-glass: rgba(18, 18, 18, 0.85);
+  /* Surface Darks */
+  --bg-primary: var(--agile-canvas-bg);
+  --bg-topbar: transparent;
+  --bg-card: var(--agile-card-bg);
+  --bg-card-glass: rgba(15, 15, 15, 0.95);
   --bg-checkbox: #0b1e0a;
-  --bg-input: #0e0e0e;
-
-  --border-subtle: #2f2f2f;
-  --border-card: #282828;
-  --border-input: #2f2f2f;
-
-  --text-primary: #e3e3e3;
-  --text-secondary: #a2a2a2;
-  --text-muted: #707070;
-
-  --accent-green: #4caf50;
+  --accent-green: var(--agile-primary-green);
   --accent-green-light: #81c784;
-  --accent-green-glow: rgba(76, 175, 80, 0.15);
+  --accent-green-glow: var(--agile-green-glow);
   --accent-red: #ef5350;
 
   /* Typography */
@@ -50,19 +42,16 @@
   box-sizing: border-box;
 }
 
-html {
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
+html,
 body {
+  height: 100vh !important;
+  width: 100vw !important;
+  overflow: hidden !important;
+  margin: 0;
+  padding: 0;
   font-family: var(--font-sans);
   background: var(--bg-primary);
   color: var(--text-primary);
-  min-height: 100vh;
-  overflow-x: hidden;
-  overflow-y: hidden;
 }
 
 button {
@@ -109,8 +98,8 @@ textarea {
   justify-content: space-between;
   height: var(--topbar-height);
   padding: 0 20px;
-  background: var(--bg-topbar);
-  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+  border-bottom: none;
   position: relative;
   z-index: 50;
   flex-shrink: 0;
@@ -126,6 +115,34 @@ textarea {
   display: flex;
   align-items: center;
   margin-right: 4px;
+}
+
+.topbar__logo-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+/* Default (Dark / Black BG topbar) uses Logo_Black_BG */
+.topbar__logo-img--dark {
+  display: block;
+}
+
+.topbar__logo-img--light {
+  display: none;
+}
+
+/* Light / White BG topbar uses Logo_White_BG */
+[data-theme="light"] .topbar__logo-img--dark,
+.theme-light .topbar__logo-img--dark,
+.topbar--light .topbar__logo-img--dark {
+  display: none !important;
+}
+
+[data-theme="light"] .topbar__logo-img--light,
+.theme-light .topbar__logo-img--light,
+.topbar--light .topbar__logo-img--light {
+  display: block !important;
 }
 
 .topbar__icon-btn {
@@ -185,169 +202,114 @@ textarea {
 }
 
 /* ═══════════════════════════════════════════════
-   MODE SWITCHER (Quiz / Agile) — Figma Component 1
+   MODE SWITCHER (Segmented Pill Toggle Control)
    ═══════════════════════════════════════════════ */
 .mode-switcher {
   position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 2px;
-  background: #1a1a1a;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-pill);
-  padding: 3px 4px 3px 3px;
-  cursor: pointer;
+  background: #191919;
+  border: none;
+  border-radius: 9999px;
+  padding: 3px;
+  height: 36px;
+  box-sizing: border-box;
   user-select: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  height: 30px;
+  overflow: hidden;
 }
 
-.mode-switcher:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+/* Sliding active green background indicator */
+.mode-switcher__slider {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  background-color: #56d364;
+  border-radius: 9999px;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.35s ease;
+  z-index: 1;
+  box-shadow: 0 2px 8px rgba(86, 211, 100, 0.3);
 }
 
-.mode-switcher__active {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: #f0f0f0;
-  color: #1a1a1a;
-  border-radius: var(--radius-pill);
-  padding: 3px 10px 3px 7px;
-  height: 24px;
-  transition: background 0.2s ease, transform 0.1s ease;
+.mode-switcher[data-active-mode="quiz"] .mode-switcher__slider {
+  transform: translateX(0);
 }
 
-.mode-switcher__active:hover {
-  background: #ffffff;
+.mode-switcher[data-active-mode="agile"] .mode-switcher__slider {
+  transform: translateX(100%);
 }
 
-.mode-switcher__active:active {
-  transform: scale(0.97);
-}
-
-.mode-switcher__icon {
+/* Segment buttons */
+.mode-switcher__item {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
+  gap: 6px;
+  padding: 0 14px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 9999px;
+  transition: color 0.3s ease;
+  outline: none;
+  white-space: nowrap;
 }
 
-.mode-switcher__icon svg {
+.mode-switcher__item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.35s ease;
+}
+
+.mode-switcher__item-icon .material-symbols-outlined {
+  font-size: 17px !important;
   display: block;
 }
 
-.mode-switcher__label {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.mode-switcher__controls {
-  display: flex;
-  align-items: center;
-  gap: 1px;
-  padding: 0 2px;
-}
-
-.mode-switcher__dots {
-  font-size: 14px !important;
-  color: var(--text-muted);
-  transition: color 0.2s ease;
-}
-
-.mode-switcher__clock {
-  font-size: 14px !important;
-  color: var(--text-muted);
-  transition: color 0.2s ease;
-}
-
-.mode-switcher:hover .mode-switcher__dots,
-.mode-switcher:hover .mode-switcher__clock {
-  color: var(--text-secondary);
-}
-
-/* ── Dropdown ── */
-.mode-switcher__dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  min-width: 200px;
-  background: #1e1e1e;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 4px;
-  box-shadow: var(--shadow-floating);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-6px) scale(0.96);
-  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
-  z-index: 200;
-}
-
-.mode-switcher__dropdown--open {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0) scale(1);
-}
-
-.mode-switcher__option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
+.mode-switcher__item-text {
   font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-  transition: background 0.15s ease;
-  text-align: left;
+  letter-spacing: 0.1px;
 }
 
-.mode-switcher__option:hover {
-  background: rgba(255, 255, 255, 0.06);
+/* Active Item State & Icon Animations */
+.mode-switcher[data-active-mode="quiz"] .mode-switcher__item--quiz,
+.mode-switcher[data-active-mode="agile"] .mode-switcher__item--agile {
+  color: #000000;
+  font-weight: 600;
 }
 
-.mode-switcher__opt-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  color: var(--text-secondary);
+.mode-switcher[data-active-mode="quiz"] .mode-switcher__item--quiz .mode-switcher__item-icon,
+.mode-switcher[data-active-mode="agile"] .mode-switcher__item--agile .mode-switcher__item-icon {
+  transform: scale(1.18) rotate(-4deg);
+  color: #000000;
 }
 
-.mode-switcher__opt-label {
-  flex: 1;
-  white-space: nowrap;
+/* Hover effects */
+.mode-switcher__item:hover {
+  color: rgba(255, 255, 255, 0.95);
 }
 
-.mode-switcher__opt-check {
-  font-size: 16px !important;
-  color: var(--accent-green);
-  opacity: 0;
-  transform: scale(0.5);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+.mode-switcher[data-active-mode="quiz"] .mode-switcher__item--quiz:hover,
+.mode-switcher[data-active-mode="agile"] .mode-switcher__item--agile:hover {
+  color: #000000;
 }
 
-.mode-switcher__option--active .mode-switcher__opt-check {
-  opacity: 1;
-  transform: scale(1);
+.mode-switcher__item:hover .mode-switcher__item-icon {
+  transform: scale(1.1);
 }
 
-.mode-switcher__option--active {
-  background: rgba(76, 175, 80, 0.08);
-}
-
-.mode-switcher__option--active:hover {
-  background: rgba(76, 175, 80, 0.12);
+.mode-switcher[data-active-mode="quiz"] .mode-switcher__item--quiz:hover .mode-switcher__item-icon,
+.mode-switcher[data-active-mode="agile"] .mode-switcher__item--agile:hover .mode-switcher__item-icon {
+  transform: scale(1.22) rotate(-6deg);
 }
 
 /* ═══════════════════════════════════════════════
