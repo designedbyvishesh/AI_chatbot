@@ -9,6 +9,7 @@ const path = require('path');
 const { connectDB, getDB, closeDB } = require('./server/config/db');
 
 const sessionsRoutes = require('./server/routes/sessions.routes');
+const agileSessionsRoutes = require('./server/routes/agile-sessions.routes');
 const flowsRoutes = require('./server/routes/flows.routes');
 const quizzesRoutes = require('./server/routes/quizzes.routes');
 const chatRoutes = require('./server/routes/chat.routes');
@@ -35,6 +36,7 @@ app.get('/api/db-status', (req, res) => {
 
 // ─── Modular Routes ───
 app.use('/api/sessions', sessionsRoutes);
+app.use('/api/agile-sessions', agileSessionsRoutes);
 app.use('/api/flows', flowsRoutes);
 app.use('/api/quizzes', quizzesRoutes);
 app.use('/api/chat', chatRoutes);

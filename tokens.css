@@ -1,0 +1,51 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   UNIFIED AGILE DESIGN SYSTEM TOKENS (Single Source of Truth)
+   Derived EXCLUSIVELY from the Agile Homepage & Session Design Language
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Surface & Background Tokens ── */
+  --agile-canvas-bg:       #000000; /* Pure black outer backdrop */
+  --agile-frame-bg:        #191919; /* Column frames & elevated containers */
+  --agile-card-bg:         #0F0F0F; /* Internal cards, CTA bars, chat boxes */
+  --agile-card-hover:      #202020; /* Universal hover fill */
+
+  /* ── Brand & Accent Tokens ── */
+  --agile-primary-green:   #56D364; /* Vibrant Agile Primary Green */
+  --agile-green-glow:      rgba(86, 211, 100, 0.3); /* Button & slider glow */
+  --agile-border-subtle:   rgba(255, 255, 255, 0.06); /* Clean dark dividers */
+  --agile-border-strong:   rgba(255, 255, 255, 0.12);
+
+  /* ── Typography Tokens ── */
+  --agile-font-serif:      'DM Serif Text', 'Playfair Display', Georgia, serif;
+  --agile-font-sans:       'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* ── Text Colors ── */
+  --agile-text-primary:    #FFFFFF; /* High contrast headers & active text */
+  --agile-text-secondary:  #D0D0D0; /* Body text */
+  --agile-text-muted:      #8C8C8C; /* Sub-labels, metadata, timestamps */
+  --agile-text-dark:       #000000; /* Text on green active pills */
+
+  /* ── Corner Geometry Radii ── */
+  --agile-radius-pill:     9999px; /* Buttons, CTAs, Segmented Toggles */
+  --agile-radius-frame:    16px;   /* Main Right Frame, Modals, Containers */
+  --agile-radius-card:     12px;   /* Stat Cards, Session Rows, Feedback Cards */
+  --agile-radius-sm:       8px;    /* Input fields, dropdown chips */
+
+  /* ── Motion & Animation Specs ── */
+  --agile-transition-fast: 0.15s ease;
+  --agile-transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  --agile-transition-bounce: 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Smooth Page & View Transitions */
+@keyframes agileViewTransition {
+  0% {
+    opacity: 0;
+    transform: scale(0.985) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

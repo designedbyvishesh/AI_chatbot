@@ -1363,71 +1363,30 @@ function initNewChatButtons() {
   const sidebarNewChatBtn = document.getElementById('sidebar-new-chat');
   if (sidebarNewChatBtn) sidebarNewChatBtn.addEventListener('click', resetToMorningTasks);
 
-  // ── Mode Switcher (Quiz / Agile) ──
+  // ── Segmented Mode Switcher (Quiz / Agile) ──
   const switcher = document.getElementById('mode-switcher');
-  const trigger = document.getElementById('mode-switcher-trigger');
-  const dropdown = document.getElementById('mode-switcher-dropdown');
   const quizOpt = document.getElementById('mode-opt-quiz');
   const agileOpt = document.getElementById('mode-opt-agile');
-  const label = document.getElementById('mode-switcher-label');
 
-  if (!switcher || !trigger || !dropdown) return;
+  if (switcher) {
+    if (quizOpt) {
+      quizOpt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        switcher.setAttribute('data-active-mode', 'quiz');
+        if (typeof resetToMorningTasks === 'function') resetToMorningTasks();
+      });
+    }
 
-  function openModeSwitcher() {
-    dropdown.classList.add('mode-switcher__dropdown--open');
-  }
-
-  function closeModeSwitcher() {
-    dropdown.classList.remove('mode-switcher__dropdown--open');
-  }
-
-  function toggleModeSwitcher() {
-    if (dropdown.classList.contains('mode-switcher__dropdown--open')) {
-      closeModeSwitcher();
-    } else {
-      openModeSwitcher();
+    if (agileOpt) {
+      agileOpt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        switcher.setAttribute('data-active-mode', 'agile');
+        setTimeout(() => {
+          window.location.href = 'agile.html';
+        }, 180);
+      });
     }
   }
-
-  // Click trigger to toggle dropdown
-  switcher.addEventListener('click', (e) => {
-    e.stopPropagation();
-    toggleModeSwitcher();
-  });
-
-  // Quiz option — stay on current page (default quiz version)
-  if (quizOpt) {
-    quizOpt.addEventListener('click', (e) => {
-      e.stopPropagation();
-      // Update active state
-      if (quizOpt) quizOpt.classList.add('mode-switcher__option--active');
-      if (agileOpt) agileOpt.classList.remove('mode-switcher__option--active');
-      if (label) label.textContent = 'Quiz';
-      closeModeSwitcher();
-      resetToMorningTasks();
-    });
-  }
-
-  // Agile option — navigate to agile.html
-  if (agileOpt) {
-    agileOpt.addEventListener('click', (e) => {
-      e.stopPropagation();
-      // Update active state visually before navigating
-      if (agileOpt) agileOpt.classList.add('mode-switcher__option--active');
-      if (quizOpt) quizOpt.classList.remove('mode-switcher__option--active');
-      if (label) label.textContent = 'Agile';
-      closeModeSwitcher();
-      // Navigate to Agile page
-      window.location.href = 'agile.html';
-    });
-  }
-
-  // Close on outside click
-  document.addEventListener('click', (e) => {
-    if (!switcher.contains(e.target)) {
-      closeModeSwitcher();
-    }
-  });
 
   // Close on Escape
   document.addEventListener('keydown', (e) => {
