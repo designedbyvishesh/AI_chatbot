@@ -22,59 +22,31 @@
     <header class="topbar" id="topbar">
       <div class="topbar__left">
         <div class="topbar__logo" id="logo" title="Design System AI Engine">
-          <svg width="28" height="24" viewBox="0 0 28 24" fill="none">
-            <rect x="2" y="4" width="8" height="16" rx="2" fill="#4CAF50" />
-            <rect x="12" y="8" width="6" height="12" rx="2" fill="#66BB6A" />
-            <rect x="20" y="2" width="6" height="18" rx="2" fill="#81C784" />
-          </svg>
+          <img src="assets/Logo_Black_BG.svg" alt="Logo" class="topbar__logo-img topbar__logo-img--dark" width="32" height="32" />
+          <img src="assets/Logo_White_BG.svg" alt="Logo" class="topbar__logo-img topbar__logo-img--light" width="32" height="32" />
         </div>
         <button class="topbar__icon-btn" id="menu-btn" aria-label="Open sidebar" title="Chat History & Topics">
           <span class="material-symbols-outlined">menu</span>
         </button>
         <!-- ═══ Mode Switcher (Quiz / Agile) ═══ -->
-        <div class="mode-switcher" id="mode-switcher" title="Switch between Quiz & Agile modes">
-          <div class="mode-switcher__active" id="mode-switcher-trigger">
-            <span class="mode-switcher__icon">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                <text x="8" y="11.5" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor">?</text>
-              </svg>
+        <div class="mode-switcher" id="mode-switcher" data-active-mode="quiz" title="Switch between Quiz & Agile modes">
+          <div class="mode-switcher__slider"></div>
+          <button class="mode-switcher__item mode-switcher__item--quiz" id="mode-opt-quiz" data-mode="quiz" aria-label="Switch to Quiz mode">
+            <span class="mode-switcher__item-icon">
+              <span class="material-symbols-outlined">quiz</span>
             </span>
-            <span class="mode-switcher__label" id="mode-switcher-label">Quiz</span>
-          </div>
-          <div class="mode-switcher__controls">
-            <span class="material-symbols-outlined mode-switcher__dots">more_vert</span>
-            <span class="material-symbols-outlined mode-switcher__clock">schedule</span>
-          </div>
-          <!-- Dropdown -->
-          <div class="mode-switcher__dropdown" id="mode-switcher-dropdown">
-            <button class="mode-switcher__option mode-switcher__option--active" id="mode-opt-quiz" data-mode="quiz">
-              <span class="mode-switcher__opt-icon">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                  <rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                  <text x="8" y="11.5" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor">?</text>
-                </svg>
-              </span>
-              <span class="mode-switcher__opt-label">Default Quiz Version</span>
-              <span class="material-symbols-outlined mode-switcher__opt-check">check</span>
-            </button>
-            <button class="mode-switcher__option" id="mode-opt-agile" data-mode="agile">
-              <span class="mode-switcher__opt-icon">
-                <span class="material-symbols-outlined" style="font-size: 14px;">bolt</span>
-              </span>
-              <span class="mode-switcher__opt-label">Agile</span>
-            </button>
-          </div>
+            <span class="mode-switcher__item-text">Quiz</span>
+          </button>
+          <button class="mode-switcher__item mode-switcher__item--agile" id="mode-opt-agile" data-mode="agile" aria-label="Switch to Agile mode">
+            <span class="mode-switcher__item-icon">
+              <span class="material-symbols-outlined">bolt</span>
+            </span>
+            <span class="mode-switcher__item-text">Agile</span>
+          </button>
         </div>
-        <span class="topbar__title" id="chat-title">Interaction & Design System AI</span>
       </div>
-      <span class="topbar__status" id="status-label">Prompting</span>
       <div class="topbar__right">
         <span class="topbar__time" id="current-time">07:00 AM</span>
-        <button class="topbar__icon-btn topbar__star" id="settings-trigger-btn" aria-label="AI Engine Settings"
-          title="AI Provider & Unlimited Tokens Settings">
-          <span class="material-symbols-outlined">kid_star</span>
-        </button>
         <button class="topbar__icon-btn" id="more-btn" aria-label="More options" title="Page Options">
           <span class="material-symbols-outlined">more_horiz</span>
         </button>
