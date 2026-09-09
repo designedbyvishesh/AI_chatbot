@@ -1,14 +1,16 @@
+@import url('tokens.css');
+
 /* ═══════════════════════════════════════════════════════════════════════════
    AGILE WHITEBOARD SESSION PAGE STYLES — REDESIGNED HOMEPAGE & SESSION VIEW
    Exact implementation matching Image 1 (Homepage) & Image 2 (Session Page)
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --agile-primary-dark: #56D364;
+  --agile-primary-dark: var(--agile-primary-green);
   --agile-primary-light: #008A25;
-  --agile-card-bg: #191919;
+  --agile-card-bg: var(--agile-frame-bg);
   --agile-streak-empty: #102310;
-  --agile-bg-dark: #070708;
+  --agile-bg-dark: var(--agile-canvas-bg);
 }
 
 /* ── Workspace Main Layout ── */

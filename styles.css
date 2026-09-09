@@ -1,26 +1,18 @@
+@import url('tokens.css');
+
 /* ═══════════════════════════════════════════════
-   DESIGN TOKENS & PALETTE (Matching Figma)
+   DESIGN TOKENS & PALETTE (Derived from Agile)
    ═══════════════════════════════════════════════ */
 :root {
-  /* Colors */
-  --bg-primary: #0a0a0a;
-  --bg-topbar: #181818;
-  --bg-card: #0e0e0e;
-  --bg-card-glass: rgba(18, 18, 18, 0.85);
+  /* Surface Darks */
+  --bg-primary: var(--agile-canvas-bg);
+  --bg-topbar: transparent;
+  --bg-card: var(--agile-card-bg);
+  --bg-card-glass: rgba(15, 15, 15, 0.95);
   --bg-checkbox: #0b1e0a;
-  --bg-input: #0e0e0e;
-
-  --border-subtle: #2f2f2f;
-  --border-card: #282828;
-  --border-input: #2f2f2f;
-
-  --text-primary: #e3e3e3;
-  --text-secondary: #a2a2a2;
-  --text-muted: #707070;
-
-  --accent-green: #4caf50;
+  --accent-green: var(--agile-primary-green);
   --accent-green-light: #81c784;
-  --accent-green-glow: rgba(76, 175, 80, 0.15);
+  --accent-green-glow: var(--agile-green-glow);
   --accent-red: #ef5350;
 
   /* Typography */
