@@ -358,8 +358,17 @@ textarea {
 }
 
 @keyframes glowPulse {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.05); }
+
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
 }
 
 /* ═══════════════════════════════════════════════
@@ -394,11 +403,27 @@ textarea {
 }
 
 @keyframes wave {
-  0%, 100% { transform: rotate(0deg); }
-  20% { transform: rotate(14deg); }
-  40% { transform: rotate(-8deg); }
-  60% { transform: rotate(14deg); }
-  80% { transform: rotate(-4deg); }
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  20% {
+    transform: rotate(14deg);
+  }
+
+  40% {
+    transform: rotate(-8deg);
+  }
+
+  60% {
+    transform: rotate(14deg);
+  }
+
+  80% {
+    transform: rotate(-4deg);
+  }
 }
 
 .tasks-section__heading {
@@ -430,26 +455,25 @@ textarea {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  padding: 16px 20px;
+  background: #0F0F0F;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-card);
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
 }
 
 .task-item:hover {
-  background: #141414;
-  border-color: #383838;
+  background: #202020;
+  border-color: rgba(255, 255, 255, 0.15);
   transform: translateY(-1px);
 }
 
 .task-item__checkbox {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  border: 1.5px solid var(--border-subtle);
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
   background: transparent;
   display: flex;
   align-items: center;
@@ -461,18 +485,19 @@ textarea {
 .task-item__checkbox--done {
   background: var(--accent-green);
   border-color: var(--accent-green);
-  color: #0a0a0a;
+  color: #000000;
 }
 
 .task-item__checkbox--done .material-symbols-outlined {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
+  color: #000000;
 }
 
 .task-item__label {
-  font-size: 14px;
-  font-weight: 400;
-  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 500;
+  color: #FFFFFF !important;
   line-height: 1.4;
 }
 
@@ -501,12 +526,13 @@ textarea {
   align-items: center;
   gap: 12px;
   width: 100%;
+  margin-top: 24px;
 }
 
 .suggestions__title {
   font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: #8C8C8C;
   text-transform: uppercase;
   letter-spacing: 0.8px;
 }
@@ -524,24 +550,29 @@ textarea {
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+  background: #0F0F0F;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-pill);
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: #FFFFFF;
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .chip:hover {
-  background: #181818;
-  border-color: #444;
+  background: #202020;
+  border-color: rgba(255, 255, 255, 0.15);
   transform: translateY(-1px);
+}
+
+.chip__label {
+  color: #FFFFFF !important;
 }
 
 .chip__icon {
   font-size: 16px;
-  color: var(--text-secondary);
+  color: var(--accent-green);
 }
 
 /* ═══════════════════════════════════════════════
@@ -586,15 +617,15 @@ textarea {
 }
 
 .user-message-bubble {
-  background: #141414;
-  border: 1px solid var(--border-card);
-  border-radius: var(--radius-lg);
-  padding: 14px 18px;
+  background: #191919;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-frame);
+  padding: 14px 20px;
   max-width: 597px;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.5;
-  color: var(--text-primary);
-  box-shadow: var(--shadow-subtle);
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   word-break: break-word;
   animation: taskSlideIn 0.3s ease-out;
 }
@@ -605,13 +636,13 @@ textarea {
   flex-direction: column;
   gap: 12px;
   width: 100%;
-  background: var(--bg-card-glass);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  box-shadow: var(--shadow-subtle);
-  backdrop-filter: blur(10px);
+  background: #191919;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-frame);
+  padding: 20px 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   animation: fadeInUp 0.35s ease-out;
+  color: #FFFFFF;
 }
 
 .ai-response-header {
@@ -620,15 +651,15 @@ textarea {
   gap: 8px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--accent-green-light);
+  color: var(--accent-green);
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
 
 .ai-response-body {
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.6;
-  color: var(--text-primary);
+  color: #FFFFFF !important;
   word-break: break-word;
 }
 
@@ -637,12 +668,12 @@ textarea {
   display: flex;
   flex-direction: column;
   width: 100%;
-  border-radius: var(--radius-lg);
-  background: rgba(14, 14, 14, 0.7);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(47, 47, 47, 0.6);
+  border-radius: var(--radius-frame);
+  background: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   overflow: hidden;
   transition: all 0.3s ease;
+  color: #FFFFFF;
 }
 
 .behind-scenes__header {
@@ -1869,28 +1900,59 @@ textarea {
    ANIMATIONS & KEYFRAMES
    ═══════════════════════════════════════════════ */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes taskSlideIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes stepFadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ═══════════════════════════════════════════════
@@ -1953,109 +2015,4 @@ textarea {
   .hierarchy-node__input {
     width: 100%;
   }
-}
-
-/* ═══════════════════════════════════════════════
-   NEW RELEASE SECTION (Agile Whiteboard Tool)
-   ═══════════════════════════════════════════════ */
-.release-section {
-  width: 100%;
-  margin-top: 24px;
-}
-
-.release-card {
-  position: relative;
-  background: var(--agile-frame-bg);
-  border: 1px solid var(--agile-border-subtle);
-  border-radius: var(--agile-radius-frame);
-  padding: 22px 26px;
-  box-sizing: border-box;
-  overflow: hidden;
-  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
-}
-
-.release-card:hover {
-  border-color: var(--agile-border-strong);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-
-.release-card__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.release-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: rgba(86, 211, 100, 0.12);
-  border: 1px solid rgba(86, 211, 100, 0.25);
-  border-radius: var(--agile-radius-pill);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--agile-primary-green);
-}
-
-.release-badge__icon {
-  font-size: 14px !important;
-}
-
-.release-date {
-  font-size: 12px;
-  color: var(--agile-text-muted);
-  font-weight: 500;
-}
-
-.release-card__title {
-  font-family: var(--agile-font-serif);
-  font-size: 22px;
-  font-weight: 400;
-  color: var(--agile-text-primary);
-  margin: 0 0 8px 0;
-  letter-spacing: -0.2px;
-}
-
-.release-card__desc {
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--agile-text-secondary);
-  margin: 0 0 18px 0;
-}
-
-.release-card__footer {
-  display: flex;
-  align-items: center;
-}
-
-.release-cta-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  background: var(--agile-primary-green);
-  color: #000000;
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: var(--agile-radius-pill);
-  text-decoration: none;
-  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 2px 10px rgba(86, 211, 100, 0.25);
-}
-
-.release-cta-btn:hover {
-  background: #48C056;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(86, 211, 100, 0.35);
-}
-
-.release-cta-btn .material-symbols-outlined {
-  font-size: 16px !important;
-  transition: transform 0.2s ease;
-}
-
-.release-cta-btn:hover .material-symbols-outlined {
-  transform: translateX(3px);
 }

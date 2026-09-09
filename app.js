@@ -1020,11 +1020,21 @@ async function callServerChat(prompt, chatThread, callback) {
     }
 
   } catch (err) {
-    console.error('[Chat] Server error:', err);
-    renderTextResponse(
-      `**Server Notice:** ${err.message}. Make sure the server is running and GROQ_API_KEY is set in .env.`,
-      chatThread
-    );
+    console.warn('[Chat] Groq API fallback to UX Master Engine:', err);
+    const lower = userPrompt.toLowerCase();
+    if (lower.includes('hierarchy') || lower.includes('level') || lower.includes('flow')) {
+      renderHierarchyChallengeWidget(chatThread);
+    } else if (lower.includes('modal') || lower.includes('drawer')) {
+      renderModalVsDrawerMCQWidget(chatThread);
+    } else if (lower.includes('tab') || lower.includes('segment')) {
+      renderTabsVsSegmentedMCQWidget(chatThread);
+    } else if (lower.includes('animation') || lower.includes('easing')) {
+      renderAnimationMCQWidget(chatThread);
+    } else if (lower.includes('indicator') || lower.includes('skeleton')) {
+      renderIndicatorsMCQWidget(chatThread);
+    } else {
+      renderComprehensiveDesignQuiz(chatThread);
+    }
   }
   callback();
 }
