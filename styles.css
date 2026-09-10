@@ -161,25 +161,6 @@ textarea {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.topbar__title {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin-left: 4px;
-  white-space: nowrap;
-}
-
-.topbar__status {
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--text-secondary);
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  pointer-events: none;
-  letter-spacing: 0.2px;
-}
-
 .topbar__right {
   display: flex;
   align-items: center;
@@ -191,14 +172,6 @@ textarea {
   font-weight: 400;
   color: var(--text-secondary);
   white-space: nowrap;
-}
-
-.topbar__star {
-  color: #f5a623 !important;
-}
-
-.topbar__star .material-symbols-outlined {
-  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
 }
 
 /* ═══════════════════════════════════════════════
