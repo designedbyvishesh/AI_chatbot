@@ -906,7 +906,7 @@
         <div class="agile-stepper-header">
           <img src="assets/Logo_White_BG.svg" alt="Logo" class="agile-stepper-icon" width="42" height="42" />
           <div class="agile-stepper-progress-track">
-            <div id="agile-stepper-progress-fill" class="agile-stepper-progress-fill" style="width: 20%;"></div>
+            <div id="agile-stepper-progress-fill" class="agile-stepper-progress-fill" style="width: 0%;"></div>
           </div>
           <div class="agile-stepper-subcopy">Select an option below to customize your challenge.</div>
         </div>
