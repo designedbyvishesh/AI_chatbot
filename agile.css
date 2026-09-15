@@ -886,6 +886,10 @@
   outline: none;
 }
 
+.agile-notes-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
 /* Embedded RecordingTimer Widget Override (Right Panel width: 192px, remove presets grid) */
 .agile-inner-card--recorder {
   padding: 0;

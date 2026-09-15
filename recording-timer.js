@@ -593,9 +593,18 @@ class RecordingTimer {
     const formattedSecs = seconds < 10 ? `0${seconds}` : `${seconds}`;
 
     const prefix = isOvertime ? '+ ' : '- ';
+    const textContent = `${prefix}${formattedMins}:${formattedSecs}`;
+
+    const isDefaultZero = (textContent === '- 00:00' || textContent === '-00:00') &&
+                          this.state === 'idle' &&
+                          !this.isHistoryMode &&
+                          !this.isUnlocked;
+
     if (this.dom && this.dom.timerDisplay) {
-      this.dom.timerDisplay.textContent = `${prefix}${formattedMins}:${formattedSecs}`;
+      this.dom.timerDisplay.textContent = textContent;
       this.dom.timerDisplay.classList.toggle('is-overtime', isOvertime);
+      this.dom.timerDisplay.classList.toggle('is-active', !isDefaultZero && !isOvertime);
+      this.dom.timerDisplay.style.color = isDefaultZero ? '#ffffff69' : (isOvertime ? '' : '#ffffff');
     }
   }
 

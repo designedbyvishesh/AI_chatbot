@@ -280,12 +280,17 @@
   font-size: 34px;
   font-weight: 700;
   letter-spacing: -0.5px;
-  color: #ffffff;
+  color: #ffffff69;
   margin-top: 0;
   font-variant-numeric: tabular-nums;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.recorder-widget__timer-display.is-active {
+  color: #ffffff;
 }
 
 .recorder-widget__timer-display.is-overtime {
