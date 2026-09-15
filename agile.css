@@ -1294,7 +1294,7 @@
 .agile-right-canvas-frame.mode-chat-active,
 .agile-right-canvas-frame.mode-chat-active .agile-hybrid-canvas,
 .agile-right-canvas-frame.mode-chat-active .agile-hybrid-overlay {
-  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path fill='%23ffffff' stroke='%23000000' stroke-width='1.5' stroke-linejoin='round' stroke-linecap='round' d='M3 3l7 18 3-7 7-3L3 3z'/></svg>") 3 3, default !important;
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path fill='%23ffffff' stroke='%23000000' stroke-width='1.5' stroke-linejoin='round' stroke-linecap='round' d='M3 3l7 18 3-7 7-3L3 3z'/></svg>") 3 3, default;
 }
 
 .agile-right-canvas-frame.mode-chat-active input,
@@ -1312,19 +1312,25 @@
 .agile-right-canvas-frame.mode-whiteboard-active,
 .agile-right-canvas-frame.mode-whiteboard-active .agile-hybrid-canvas,
 .agile-right-canvas-frame.mode-whiteboard-active .agile-hybrid-overlay {
-  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path stroke='%23000000' stroke-width='2.5' fill='none' d='M12 2v20M2 12h20'/><circle cx='12' cy='12' r='2' fill='%23000000'/></svg>") 12 12, crosshair !important;
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path stroke='%23000000' stroke-width='2.5' fill='none' d='M12 2v20M2 12h20'/><circle cx='12' cy='12' r='2' fill='%23000000'/></svg>") 12 12, crosshair;
 }
 
 .agile-right-canvas-frame.mode-whiteboard-active[data-tool="text"],
 .agile-right-canvas-frame.mode-whiteboard-active[data-tool="text"] .agile-hybrid-canvas,
 .agile-right-canvas-frame.mode-whiteboard-active[data-tool="text"] .agile-hybrid-overlay {
-  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path stroke='%23000000' stroke-width='2.5' fill='none' d='M7 4h10M12 4v16M9 20h6'/></svg>") 12 12, text !important;
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path stroke='%23000000' stroke-width='2.5' fill='none' d='M7 4h10M12 4v16M9 20h6'/></svg>") 12 12, text;
+}
+
+.agile-right-canvas-frame.mode-whiteboard-active[data-tool="move"],
+.agile-right-canvas-frame.mode-whiteboard-active[data-tool="move"] .agile-hybrid-canvas,
+.agile-right-canvas-frame.mode-whiteboard-active[data-tool="move"] .agile-hybrid-overlay {
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path fill='%23ffffff' stroke='%23000000' stroke-width='1.5' stroke-linejoin='round' stroke-linecap='round' d='M3 3l7 18 3-7 7-3L3 3z'/></svg>") 3 3, default;
 }
 
 .agile-right-canvas-frame.mode-whiteboard-active[data-tool="hand"],
 .agile-right-canvas-frame.mode-whiteboard-active[data-tool="hand"] .agile-hybrid-canvas,
 .agile-right-canvas-frame.mode-whiteboard-active[data-tool="hand"] .agile-hybrid-overlay {
-  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24'><path fill='%23ffffff' stroke='%23000000' stroke-width='1.5' stroke-linejoin='round' stroke-linecap='round' d='M13 1.5a1.5 1.5 0 0 0-3 0v7.5a.5.5 0 0 1-1 0V3.5a1.5 1.5 0 0 0-3 0v6.5a.5.5 0 0 1-1 0V5.5a1.5 1.5 0 0 0-3 0v8c0 4.418 3.582 8 8 8s8-3.582 8-8V8.5a1.5 1.5 0 0 0-3 0v.5a.5.5 0 0 1-1 0V1.5z'/></svg>") 12 12, grab !important;
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24'><path fill='%23ffffff' stroke='%23000000' stroke-width='1.5' stroke-linejoin='round' stroke-linecap='round' d='M13 1.5a1.5 1.5 0 0 0-3 0v7.5a.5.5 0 0 1-1 0V3.5a1.5 1.5 0 0 0-3 0v6.5a.5.5 0 0 1-1 0V5.5a1.5 1.5 0 0 0-3 0v8c0 4.418 3.582 8 8 8s8-3.582 8-8V8.5a1.5 1.5 0 0 0-3 0v.5a.5.5 0 0 1-1 0V1.5z'/></svg>") 12 12, grab;
 }
 
 .agile-right-canvas-frame.is-panning,
@@ -2010,6 +2016,29 @@
   font-weight: 500;
   color: rgba(255, 255, 255, 0.7);
   letter-spacing: 0.2px;
-  user-select: none;
+
+/* ── Canvas Auto-Expanding Text Node Input ── */
+.agile-text-node-input {
+  position: absolute;
+  min-width: 400px;
+  max-width: 720px;
+  min-height: 40px;
+  padding: 8px 12px;
+  background: rgba(17, 17, 17, 0.95);
+  border: 2px solid #56D364;
+  border-radius: 8px;
+  color: #ffffff;
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 

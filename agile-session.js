@@ -1175,7 +1175,7 @@
     // Engine State
     const engineState = {
       mode: 'chat', // 'chat' | 'whiteboard'
-      tool: 'text', // 'text' | 'rectangle' | 'circle' | 'line'
+      tool: 'text', // 'text' | 'rectangle' | 'circle' | 'line' | 'hand' | 'move'
       color: '#111111',
       scale: 1.0,
       translate: { x: 0, y: 0 },
@@ -1186,8 +1186,247 @@
       currentPoint: null,
       freehandPoints: [],
       shapes: [],
-      chatCards: []
+      chatCards: [],
+      // Figma-Style Selection & Resizing State
+      selectedShapeId: null,
+      selectedShapeIds: [],
+      isSelectingArea: false,
+      selectionStart: null,
+      selectionCurrent: null,
+      isMovingShape: false,
+      isResizingShape: false,
+      resizeHandle: null,
+      dragStartCanvas: null,
+      shapeInitialState: null,
+      shapeInitialStates: {}
     };
+
+    // Helper: Multi-line text wrapping for canvas text nodes
+    function wrapTextLines(context, text, maxWidth) {
+      if (!text) return [];
+      const lines = [];
+      const paragraphs = text.split('\n');
+      paragraphs.forEach((p) => {
+        if (!p) {
+          lines.push('');
+          return;
+        }
+        const words = p.split(' ');
+        let currentLine = words[0] || '';
+        for (let i = 1; i < words.length; i++) {
+          const word = words[i];
+          const testLine = currentLine + ' ' + word;
+          const metrics = context.measureText(testLine);
+          if (metrics.width > maxWidth && currentLine !== '') {
+            lines.push(currentLine);
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        }
+        lines.push(currentLine);
+      });
+      return lines;
+    }
+
+    // Helper: Get Shape Bounding Box
+    function getShapeBounds(shape) {
+      if (!shape) return { x: 0, y: 0, width: 0, height: 0 };
+      if (shape.type === 'rect') {
+        return { x: shape.x, y: shape.y, width: shape.width, height: shape.height };
+      } else if (shape.type === 'circle') {
+        return { x: shape.cx - shape.r, y: shape.cy - shape.r, width: shape.r * 2, height: shape.r * 2 };
+      } else if (shape.type === 'line') {
+        const x = Math.min(shape.x1, shape.x2);
+        const y = Math.min(shape.y1, shape.y2);
+        const w = Math.abs(shape.x2 - shape.x1);
+        const h = Math.abs(shape.y2 - shape.y1);
+        return { x, y, width: Math.max(w, 8), height: Math.max(h, 8) };
+      } else if (shape.type === 'text') {
+        ctx.save();
+        ctx.font = '500 16px Inter, sans-serif';
+        const maxW = Math.min(shape.width || 400, 720);
+        const lines = wrapTextLines(ctx, shape.text || '', maxW);
+        let maxLineW = 0;
+        lines.forEach((l) => {
+          const m = ctx.measureText(l);
+          if (m.width > maxLineW) maxLineW = m.width;
+        });
+        ctx.restore();
+        const finalW = Math.max(100, Math.min(720, Math.max(maxLineW + 16, shape.width || 400)));
+        const finalH = Math.max(30, lines.length * 22 + 10);
+        return { x: shape.x, y: shape.y, width: finalW, height: finalH };
+      } else if (shape.type === 'path' && shape.points && shape.points.length > 0) {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        shape.points.forEach(pt => {
+          minX = Math.min(minX, pt.x);
+          minY = Math.min(minY, pt.y);
+          maxX = Math.max(maxX, pt.x);
+          maxY = Math.max(maxY, pt.y);
+        });
+        return { x: minX - 4, y: minY - 4, width: Math.max(8, maxX - minX + 8), height: Math.max(8, maxY - minY + 8) };
+      }
+      return { x: 0, y: 0, width: 0, height: 0 };
+    }
+
+    // Helper: Combined bounding box for multi-selected shapes
+    function getCombinedBounds(shapes) {
+      if (!shapes || shapes.length === 0) return { x: 0, y: 0, width: 0, height: 0 };
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      shapes.forEach(s => {
+        const b = getShapeBounds(s);
+        minX = Math.min(minX, b.x);
+        minY = Math.min(minY, b.y);
+        maxX = Math.max(maxX, b.x + b.width);
+        maxY = Math.max(maxY, b.y + b.height);
+      });
+      return { x: minX, y: minY, width: Math.max(8, maxX - minX), height: Math.max(8, maxY - minY) };
+    }
+
+    // Helper: Test bounding box overlap (for marquee selection box)
+    function boundsOverlap(b1, b2) {
+      return !(
+        b1.x + b1.width < b2.x ||
+        b2.x + b2.width < b1.x ||
+        b1.y + b1.height < b2.y ||
+        b2.y + b2.height < b1.y
+      );
+    }
+
+    // Helper: Distance from point (px, py) to line segment (x1, y1)-(x2, y2)
+    function distToSegment(px, py, x1, y1, x2, y2) {
+      const l2 = (x2 - x1) ** 2 + (y2 - y1) ** 2;
+      if (l2 === 0) return Math.hypot(px - x1, py - y1);
+      let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+      t = Math.max(0, Math.min(1, t));
+      const projX = x1 + t * (x2 - x1);
+      const projY = y1 + t * (y2 - y1);
+      return Math.hypot(px - projX, py - projY);
+    }
+
+    // Helper: Hit Test Shape Border Stroke (Topmost shape first)
+    function hitTestShapeBorder(cx, cy, threshold = 8 / engineState.scale) {
+      for (let i = engineState.shapes.length - 1; i >= 0; i--) {
+        const shape = engineState.shapes[i];
+        if (shape.type === 'rect') {
+          const x = shape.x, y = shape.y, w = shape.width, h = shape.height;
+          const d1 = distToSegment(cx, cy, x, y, x + w, y);
+          const d2 = distToSegment(cx, cy, x + w, y, x + w, y + h);
+          const d3 = distToSegment(cx, cy, x + w, y + h, x, y + h);
+          const d4 = distToSegment(cx, cy, x, y + h, x, y);
+          if (Math.min(d1, d2, d3, d4) <= threshold) return shape;
+        } else if (shape.type === 'circle') {
+          const dist = Math.hypot(cx - shape.cx, cy - shape.cy);
+          if (Math.abs(dist - shape.r) <= threshold) return shape;
+        } else if (shape.type === 'line') {
+          if (distToSegment(cx, cy, shape.x1, shape.y1, shape.x2, shape.y2) <= threshold) return shape;
+        } else if (shape.type === 'text') {
+          const bounds = getShapeBounds(shape);
+          const x = bounds.x, y = bounds.y, w = bounds.width, h = bounds.height;
+          const d1 = distToSegment(cx, cy, x, y, x + w, y);
+          const d2 = distToSegment(cx, cy, x + w, y, x + w, y + h);
+          const d3 = distToSegment(cx, cy, x + w, y + h, x, y + h);
+          const d4 = distToSegment(cx, cy, x, y, x, y + h);
+          if (Math.min(d1, d2, d3, d4) <= threshold + 4) return shape;
+        } else if (shape.type === 'path' && shape.points && shape.points.length > 1) {
+          for (let j = 0; j < shape.points.length - 1; j++) {
+            const p1 = shape.points[j], p2 = shape.points[j + 1];
+            if (distToSegment(cx, cy, p1.x, p1.y, p2.x, p2.y) <= threshold) return shape;
+          }
+        }
+      }
+      return null;
+    }
+
+    // Helper: Hit Test Shape Bounding Box (Topmost shape first)
+    function hitTestShape(cx, cy) {
+      for (let i = engineState.shapes.length - 1; i >= 0; i--) {
+        const shape = engineState.shapes[i];
+        const bounds = getShapeBounds(shape);
+        const padding = 6;
+        if (
+          cx >= bounds.x - padding &&
+          cx <= bounds.x + bounds.width + padding &&
+          cy >= bounds.y - padding &&
+          cy <= bounds.y + bounds.height + padding
+        ) {
+          return shape;
+        }
+      }
+      return null;
+    }
+
+    // Helper: Get 8 Resize Handles for Selected Shape(s)
+    function getResizeHandles(shape) {
+      if (shape.type === 'line') {
+        return [
+          { handle: 'p1', x: shape.x1, y: shape.y1 },
+          { handle: 'p2', x: shape.x2, y: shape.y2 }
+        ];
+      }
+      const bounds = getShapeBounds(shape);
+      const x = bounds.x;
+      const y = bounds.y;
+      const w = bounds.width;
+      const h = bounds.height;
+      return [
+        { handle: 'tl', x: x, y: y },
+        { handle: 'tr', x: x + w, y: y },
+        { handle: 'bl', x: x, y: y + h },
+        { handle: 'br', x: x + w, y: y + h },
+        { handle: 't', x: x + w / 2, y: y },
+        { handle: 'b', x: x + w / 2, y: y + h },
+        { handle: 'l', x: x, y: y + h / 2 },
+        { handle: 'r', x: x + w, y: y + h / 2 }
+      ];
+    }
+
+    // Helper: Hit Test Resize Handle
+    function hitTestResizeHandle(cx, cy, shape) {
+      if (!shape) return null;
+      const handles = getResizeHandles(shape);
+      const threshold = 12 / engineState.scale;
+      for (let h of handles) {
+        const dist = Math.hypot(cx - h.x, cy - h.y);
+        if (dist <= threshold) {
+          return h.handle;
+        }
+      }
+      return null;
+    }
+
+    // Helper: Render Selection Bounding Box & 8 Handles for Single or Multi-Selected Shapes
+    function renderSelectionOverlay(shapesOrShape) {
+      const selectedShapes = Array.isArray(shapesOrShape) ? shapesOrShape : [shapesOrShape];
+      if (!selectedShapes || selectedShapes.length === 0) return;
+
+      ctx.save();
+      const bounds = selectedShapes.length === 1 ? getShapeBounds(selectedShapes[0]) : getCombinedBounds(selectedShapes);
+
+      // Draw bounding box outline (#009B1A)
+      ctx.strokeStyle = '#009B1A';
+      ctx.lineWidth = 1.8 / engineState.scale;
+      ctx.setLineDash([4 / engineState.scale, 4 / engineState.scale]);
+      ctx.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+      ctx.setLineDash([]);
+
+      // Draw 8 handles
+      const dummyShape = { type: 'rect', x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+      const handles = getResizeHandles(dummyShape);
+      const handleSize = 8 / engineState.scale;
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#009B1A';
+      ctx.lineWidth = 1.5 / engineState.scale;
+
+      handles.forEach(h => {
+        ctx.beginPath();
+        ctx.rect(h.x - handleSize / 2, h.y - handleSize / 2, handleSize, handleSize);
+        ctx.fill();
+        ctx.stroke();
+      });
+
+      ctx.restore();
+    }
 
     // Expose engine state cards and shapes arrays globally for session manager
     window.AgileSpatialCards = engineState.chatCards;
@@ -1382,7 +1621,12 @@
           ctx.stroke();
         } else if (shape.type === 'text') {
           ctx.font = '500 16px Inter, sans-serif';
-          ctx.fillText(shape.text, shape.x, shape.y + 16);
+          const maxW = Math.min(shape.width || 400, 720);
+          const lines = wrapTextLines(ctx, shape.text, maxW);
+          const lineHeight = 22;
+          lines.forEach((line, idx) => {
+            ctx.fillText(line, shape.x, shape.y + 16 + idx * lineHeight);
+          });
         }
       });
 
@@ -1398,11 +1642,17 @@
           const h = Math.abs(engineState.currentPoint.y - engineState.startPoint.y);
           ctx.strokeRect(x, y, w, h);
         } else if (engineState.tool === 'circle') {
-          const dx = engineState.currentPoint.x - engineState.startPoint.x;
-          const dy = engineState.currentPoint.y - engineState.startPoint.y;
-          const radius = Math.sqrt(dx * dx + dy * dy);
+          const x1 = engineState.startPoint.x;
+          const y1 = engineState.startPoint.y;
+          const x2 = engineState.currentPoint.x;
+          const y2 = engineState.currentPoint.y;
+          const cx = (x1 + x2) / 2;
+          const cy = (y1 + y2) / 2;
+          const rx = Math.abs(x2 - x1) / 2;
+          const ry = Math.abs(y2 - y1) / 2;
+          const radius = Math.max(rx, ry);
           ctx.beginPath();
-          ctx.arc(engineState.startPoint.x, engineState.startPoint.y, radius, 0, Math.PI * 2);
+          ctx.arc(cx, cy, radius, 0, Math.PI * 2);
           ctx.stroke();
         } else if (engineState.tool === 'line') {
           ctx.beginPath();
@@ -1411,6 +1661,37 @@
           ctx.stroke();
         } else if (engineState.freehandPoints.length > 0) {
           drawSmoothedPath(ctx, engineState.freehandPoints, engineState.color);
+        }
+      }
+
+      // Render Marquee Selection Box (Stroke 1.5px #009B1A, Fill rgba(0, 255, 43, 0.05))
+      if (engineState.isSelectingArea && engineState.selectionStart && engineState.selectionCurrent) {
+        const x = Math.min(engineState.selectionStart.x, engineState.selectionCurrent.x);
+        const y = Math.min(engineState.selectionStart.y, engineState.selectionCurrent.y);
+        const w = Math.abs(engineState.selectionCurrent.x - engineState.selectionStart.x);
+        const h = Math.abs(engineState.selectionCurrent.y - engineState.selectionStart.y);
+
+        ctx.save();
+        ctx.strokeStyle = '#009B1A';
+        ctx.lineWidth = 1.5 / engineState.scale;
+        ctx.fillStyle = 'rgba(0, 255, 43, 0.05)';
+        ctx.beginPath();
+        ctx.rect(x, y, w, h);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Render Selection Overlay Box & Handles for Selected Shape(s)
+      if (engineState.selectedShapeIds && engineState.selectedShapeIds.length > 0) {
+        const selectedShapes = engineState.shapes.filter(s => engineState.selectedShapeIds.includes(s.id));
+        if (selectedShapes.length > 0) {
+          renderSelectionOverlay(selectedShapes);
+        }
+      } else if (engineState.selectedShapeId) {
+        const selectedShape = engineState.shapes.find(s => s.id === engineState.selectedShapeId);
+        if (selectedShape) {
+          renderSelectionOverlay(selectedShape);
         }
       }
 
@@ -1771,11 +2052,24 @@
       }, { passive: false });
     }
 
+    // Helper: Determine resize cursor when hovering on border/handle of a selected shape
+    function getShapeBorderResizeCursor(cx, cy, shape) {
+      if (!shape) return 'default';
+      const handle = hitTestResizeHandle(cx, cy, shape);
+      if (handle) {
+        if (handle === 'tl' || handle === 'br') return 'nwse-resize';
+        if (handle === 'tr' || handle === 'bl') return 'nesw-resize';
+        if (handle === 't' || handle === 'b') return 'ns-resize';
+        if (handle === 'l' || handle === 'r') return 'ew-resize';
+        if (handle === 'p1' || handle === 'p2') return 'move';
+      }
+      return 'move';
+    }
+
     /* ── 7. Pointer Events for Drawing, Panning & Shape Normalization ── */
     canvasEl.addEventListener('pointerdown', (e) => {
       if (sessionState.isCanvasLocked) return;
 
-      // Spacebar hold OR Middle Click OR Pan Tool (Works in BOTH Modes)
       if (isSpacePressed || e.button === 1 || engineState.tool === 'hand') {
         engineState.isPanning = true;
         engineState.panStart = { x: e.clientX, y: e.clientY };
@@ -1788,12 +2082,85 @@
 
       const canvasCoords = screenToCanvasCoordinates(e.clientX, e.clientY);
 
-      // Text Tool Handling (Auto-expanding overlay textarea)
-      if (engineState.tool === 'text') {
-        spawnAutoExpandingTextNode(canvasCoords.x, canvasCoords.y, e.clientX, e.clientY);
+      // 1. Check if user clicked border/handle of currently SELECTED shape to start resizing
+      if (engineState.selectedShapeIds && engineState.selectedShapeIds.length === 1) {
+        const selectedShape = engineState.shapes.find(s => s.id === engineState.selectedShapeIds[0]);
+        if (selectedShape) {
+          const isBorderOrHandleHit = hitTestShapeBorder(canvasCoords.x, canvasCoords.y);
+          if (isBorderOrHandleHit && isBorderOrHandleHit.id === selectedShape.id) {
+            const handle = getShapeBorderResizeHandle(canvasCoords.x, canvasCoords.y, selectedShape);
+            if (handle) {
+              engineState.isResizingShape = true;
+              engineState.resizeHandle = handle;
+              engineState.dragStartCanvas = canvasCoords;
+              engineState.shapeInitialState = JSON.parse(JSON.stringify(selectedShape));
+              canvasEl.setPointerCapture(e.pointerId);
+              renderCanvas();
+              return;
+            }
+          }
+        }
+      }
+
+      // 2. If Move Tool is active:
+      if (engineState.tool === 'move') {
+        const clickedShape = hitTestShape(canvasCoords.x, canvasCoords.y);
+        if (clickedShape) {
+          if (!engineState.selectedShapeIds.includes(clickedShape.id)) {
+            engineState.selectedShapeIds = [clickedShape.id];
+            engineState.selectedShapeId = clickedShape.id;
+          }
+          engineState.isMovingShape = true;
+          engineState.dragStartCanvas = canvasCoords;
+
+          engineState.shapeInitialStates = {};
+          engineState.shapes.forEach(s => {
+            if (engineState.selectedShapeIds.includes(s.id)) {
+              engineState.shapeInitialStates[s.id] = JSON.parse(JSON.stringify(s));
+            }
+          });
+          canvasEl.setPointerCapture(e.pointerId);
+          renderCanvas();
+          return;
+        }
+
+        // Clicked empty canvas with Move Tool -> Start Marquee Area Drag Selection!
+        engineState.selectedShapeIds = [];
+        engineState.selectedShapeId = null;
+        engineState.isSelectingArea = true;
+        engineState.selectionStart = canvasCoords;
+        engineState.selectionCurrent = canvasCoords;
+        canvasEl.setPointerCapture(e.pointerId);
+        renderCanvas();
         return;
       }
 
+      // 3. Check if user clicked on the BORDER STROKE of any UNSELECTED shape to select it
+      const borderHitShape = hitTestShapeBorder(canvasCoords.x, canvasCoords.y);
+      if (borderHitShape) {
+        engineState.selectedShapeIds = [borderHitShape.id];
+        engineState.selectedShapeId = borderHitShape.id;
+        engineState.isMovingShape = true;
+        engineState.dragStartCanvas = canvasCoords;
+        engineState.shapeInitialStates = {};
+        engineState.shapeInitialStates[borderHitShape.id] = JSON.parse(JSON.stringify(borderHitShape));
+        canvasEl.setPointerCapture(e.pointerId);
+        renderCanvas();
+        return;
+      }
+
+      // Clicked inside shape interior or empty canvas with drawing tool active -> deselect current shape so user can draw new shape on top!
+      engineState.selectedShapeIds = [];
+      engineState.selectedShapeId = null;
+
+      // Text Tool Handling (Auto-expanding overlay textarea)
+      if (engineState.tool === 'text') {
+        spawnAutoExpandingTextNode(canvasCoords.x, canvasCoords.y, e.clientX, e.clientY);
+        renderCanvas();
+        return;
+      }
+
+      // Shape Creation Tools (Rectangle, Circle, Line)
       engineState.isDrawing = true;
       engineState.startPoint = canvasCoords;
       engineState.currentPoint = canvasCoords;
@@ -1801,6 +2168,12 @@
       canvasEl.setPointerCapture(e.pointerId);
       renderCanvas();
     });
+
+    function setCanvasCursor(cStyle) {
+      if (canvasEl) canvasEl.style.cursor = cStyle;
+      if (overlayEl) overlayEl.style.cursor = cStyle;
+      if (canvasSpaceEl) canvasSpaceEl.style.cursor = cStyle;
+    }
 
     canvasEl.addEventListener('pointermove', (e) => {
       if (engineState.isPanning) {
@@ -1814,8 +2187,138 @@
         return;
       }
 
-      if (!engineState.isDrawing) return;
       const canvasCoords = screenToCanvasCoordinates(e.clientX, e.clientY);
+
+      // Marquee Drag Selection Box Update
+      if (engineState.isSelectingArea) {
+        engineState.selectionCurrent = canvasCoords;
+        renderCanvas();
+        return;
+      }
+
+      // Dynamic Hover Cursor Updates (Border hover arrow, handle resize arrows, tool cursors)
+      if (engineState.mode === 'whiteboard' && !engineState.isDrawing && !engineState.isMovingShape && !engineState.isResizingShape && !engineState.isPanning) {
+        let cursorSet = false;
+        if (engineState.selectedShapeIds && engineState.selectedShapeIds.length > 0) {
+          const selectedShapes = engineState.shapes.filter(s => engineState.selectedShapeIds.includes(s.id));
+          if (selectedShapes.length === 1) {
+            const selectedShape = selectedShapes[0];
+            const isHandleHit = hitTestResizeHandle(canvasCoords.x, canvasCoords.y, selectedShape);
+            const isBorderHit = hitTestShapeBorder(canvasCoords.x, canvasCoords.y);
+            if (isHandleHit || (isBorderHit && isBorderHit.id === selectedShape.id)) {
+              const resizeCursor = getShapeBorderResizeCursor(canvasCoords.x, canvasCoords.y, selectedShape);
+              setCanvasCursor(resizeCursor);
+              cursorSet = true;
+            }
+          }
+        }
+
+        if (!cursorSet) {
+          const borderHit = hitTestShapeBorder(canvasCoords.x, canvasCoords.y);
+          if (borderHit) {
+            setCanvasCursor('default'); // Arrow icon (same as AI mode)
+          } else if (engineState.tool === 'move') {
+            const shapeHit = hitTestShape(canvasCoords.x, canvasCoords.y);
+            setCanvasCursor(shapeHit ? 'move' : 'default'); // Arrow cursor for Move tool
+          } else if (engineState.tool === 'hand') {
+            const shapeHit = hitTestShape(canvasCoords.x, canvasCoords.y);
+            setCanvasCursor(shapeHit ? 'move' : 'grab');
+          } else {
+            setCanvasCursor(''); // Fallback to CSS default tool cursor
+          }
+        }
+      }
+
+      // Resizing shape via handle
+      if (engineState.isResizingShape && engineState.selectedShapeIds && engineState.selectedShapeIds.length === 1 && engineState.shapeInitialState) {
+        const shape = engineState.shapes.find(s => s.id === engineState.selectedShapeIds[0]);
+        const init = engineState.shapeInitialState;
+        const dx = canvasCoords.x - engineState.dragStartCanvas.x;
+        const dy = canvasCoords.y - engineState.dragStartCanvas.y;
+        const h = engineState.resizeHandle;
+
+        if (shape) {
+          if (shape.type === 'rect') {
+            if (h === 'tl') {
+              shape.x = init.x + dx;
+              shape.y = init.y + dy;
+              shape.width = Math.max(10, init.width - dx);
+              shape.height = Math.max(10, init.height - dy);
+            } else if (h === 'tr') {
+              shape.y = init.y + dy;
+              shape.width = Math.max(10, init.width + dx);
+              shape.height = Math.max(10, init.height - dy);
+            } else if (h === 'bl') {
+              shape.x = init.x + dx;
+              shape.width = Math.max(10, init.width - dx);
+              shape.height = Math.max(10, init.height + dy);
+            } else if (h === 'br') {
+              shape.width = Math.max(10, init.width + dx);
+              shape.height = Math.max(10, init.height + dy);
+            } else if (h === 't') {
+              shape.y = init.y + dy;
+              shape.height = Math.max(10, init.height - dy);
+            } else if (h === 'b') {
+              shape.height = Math.max(10, init.height + dy);
+            } else if (h === 'l') {
+              shape.x = init.x + dx;
+              shape.width = Math.max(10, init.width - dx);
+            } else if (h === 'r') {
+              shape.width = Math.max(10, init.width + dx);
+            }
+          } else if (shape.type === 'circle') {
+            const dist = Math.hypot(canvasCoords.x - init.cx, canvasCoords.y - init.cy);
+            shape.r = Math.max(5, dist);
+          } else if (shape.type === 'line') {
+            if (h === 'p1') {
+              shape.x1 = init.x1 + dx;
+              shape.y1 = init.y1 + dy;
+            } else if (h === 'p2') {
+              shape.x2 = init.x2 + dx;
+              shape.y2 = init.y2 + dy;
+            }
+          } else if (shape.type === 'text') {
+            if (h === 'r' || h === 'tr' || h === 'br') {
+              shape.width = Math.min(720, Math.max(100, (init.width || 400) + dx));
+            } else if (h === 'l' || h === 'tl' || h === 'bl') {
+              shape.x = init.x + dx;
+              shape.width = Math.min(720, Math.max(100, (init.width || 400) - dx));
+            }
+          }
+        }
+        renderCanvas();
+        return;
+      }
+
+      // Moving shape / shapes
+      if (engineState.isMovingShape && engineState.shapeInitialStates) {
+        const dx = canvasCoords.x - engineState.dragStartCanvas.x;
+        const dy = canvasCoords.y - engineState.dragStartCanvas.y;
+
+        engineState.shapes.forEach(shape => {
+          const init = engineState.shapeInitialStates[shape.id];
+          if (init) {
+            if (shape.type === 'rect' || shape.type === 'text') {
+              shape.x = init.x + dx;
+              shape.y = init.y + dy;
+            } else if (shape.type === 'circle') {
+              shape.cx = init.cx + dx;
+              shape.cy = init.cy + dy;
+            } else if (shape.type === 'line') {
+              shape.x1 = init.x1 + dx;
+              shape.y1 = init.y1 + dy;
+              shape.x2 = init.x2 + dx;
+              shape.y2 = init.y2 + dy;
+            } else if (shape.type === 'path' && init.points) {
+              shape.points = init.points.map(pt => ({ x: pt.x + dx, y: pt.y + dy }));
+            }
+          }
+        });
+        renderCanvas();
+        return;
+      }
+
+      if (!engineState.isDrawing) return;
       engineState.currentPoint = canvasCoords;
       engineState.freehandPoints.push(canvasCoords);
       renderCanvas();
@@ -1825,19 +2328,55 @@
       if (engineState.isPanning) {
         engineState.isPanning = false;
         if (canvasSpaceEl) canvasSpaceEl.classList.remove('is-panning');
-        try {
-          canvasEl.releasePointerCapture(e.pointerId);
-        } catch (err) {}
+        try { canvasEl.releasePointerCapture(e.pointerId); } catch (err) {}
+        return;
+      }
+
+      // Finish Marquee Drag Area Selection
+      if (engineState.isSelectingArea) {
+        engineState.isSelectingArea = false;
+        if (engineState.selectionStart && engineState.selectionCurrent) {
+          const x = Math.min(engineState.selectionStart.x, engineState.selectionCurrent.x);
+          const y = Math.min(engineState.selectionStart.y, engineState.selectionCurrent.y);
+          const w = Math.abs(engineState.selectionCurrent.x - engineState.selectionStart.x);
+          const h = Math.abs(engineState.selectionCurrent.y - engineState.selectionStart.y);
+
+          if (w > 3 || h > 3) {
+            const marquee = { x, y, width: w, height: h };
+            const matchingShapes = engineState.shapes.filter(s => boundsOverlap(getShapeBounds(s), marquee));
+            engineState.selectedShapeIds = matchingShapes.map(s => s.id);
+            engineState.selectedShapeId = matchingShapes.length > 0 ? matchingShapes[matchingShapes.length - 1].id : null;
+          }
+        }
+        engineState.selectionStart = null;
+        engineState.selectionCurrent = null;
+        try { canvasEl.releasePointerCapture(e.pointerId); } catch (err) {}
+        renderCanvas();
+        return;
+      }
+
+      if (engineState.isResizingShape) {
+        engineState.isResizingShape = false;
+        engineState.resizeHandle = null;
+        engineState.shapeInitialState = null;
+        try { canvasEl.releasePointerCapture(e.pointerId); } catch (err) {}
+        renderCanvas();
+        return;
+      }
+
+      if (engineState.isMovingShape) {
+        engineState.isMovingShape = false;
+        engineState.shapeInitialStates = {};
+        try { canvasEl.releasePointerCapture(e.pointerId); } catch (err) {}
+        renderCanvas();
         return;
       }
 
       if (!engineState.isDrawing) return;
       engineState.isDrawing = false;
-      try {
-        canvasEl.releasePointerCapture(e.pointerId);
-      } catch (err) {}
+      try { canvasEl.releasePointerCapture(e.pointerId); } catch (err) {}
 
-      // Commit shape to engineState.shapes with negative drag normalization
+      // Commit shape to engineState.shapes with corner-anchored logic
       if (engineState.startPoint && engineState.currentPoint) {
         if (engineState.tool === 'rectangle') {
           const x = Math.min(engineState.startPoint.x, engineState.currentPoint.x);
@@ -1845,29 +2384,39 @@
           const width = Math.abs(engineState.currentPoint.x - engineState.startPoint.x);
           const height = Math.abs(engineState.currentPoint.y - engineState.startPoint.y);
           if (width > 4 || height > 4) {
-            engineState.shapes.push({
+            const newShape = {
               id: Date.now(),
               type: 'rect',
               x, y, width, height,
               color: engineState.color
-            });
+            };
+            engineState.shapes.push(newShape);
+            engineState.selectedShapeIds = [newShape.id];
+            engineState.selectedShapeId = newShape.id;
           }
         } else if (engineState.tool === 'circle') {
-          const dx = engineState.currentPoint.x - engineState.startPoint.x;
-          const dy = engineState.currentPoint.y - engineState.startPoint.y;
-          const r = Math.sqrt(dx * dx + dy * dy);
+          const x1 = engineState.startPoint.x;
+          const y1 = engineState.startPoint.y;
+          const x2 = engineState.currentPoint.x;
+          const y2 = engineState.currentPoint.y;
+          const cx = (x1 + x2) / 2;
+          const cy = (y1 + y2) / 2;
+          const rx = Math.abs(x2 - x1) / 2;
+          const ry = Math.abs(y2 - y1) / 2;
+          const r = Math.max(rx, ry);
           if (r > 4) {
-            engineState.shapes.push({
+            const newShape = {
               id: Date.now(),
               type: 'circle',
-              cx: engineState.startPoint.x,
-              cy: engineState.startPoint.y,
-              r,
+              cx, cy, r,
               color: engineState.color
-            });
+            };
+            engineState.shapes.push(newShape);
+            engineState.selectedShapeIds = [newShape.id];
+            engineState.selectedShapeId = newShape.id;
           }
         } else if (engineState.tool === 'line') {
-          engineState.shapes.push({
+          const newShape = {
             id: Date.now(),
             type: 'line',
             x1: engineState.startPoint.x,
@@ -1875,14 +2424,20 @@
             x2: engineState.currentPoint.x,
             y2: engineState.currentPoint.y,
             color: engineState.color
-          });
+          };
+          engineState.shapes.push(newShape);
+          engineState.selectedShapeIds = [newShape.id];
+          engineState.selectedShapeId = newShape.id;
         } else if (engineState.freehandPoints.length > 1) {
-          engineState.shapes.push({
+          const newShape = {
             id: Date.now(),
             type: 'path',
             points: [...engineState.freehandPoints],
             color: engineState.color
-          });
+          };
+          engineState.shapes.push(newShape);
+          engineState.selectedShapeIds = [newShape.id];
+          engineState.selectedShapeId = newShape.id;
         }
       }
 
@@ -1893,7 +2448,7 @@
     });
 
     /* ── 8. Auto-Expanding Text Node Creation ── */
-    function spawnAutoExpandingTextNode(canvasX, canvasY, screenX, screenY) {
+    function spawnAutoExpandingTextNode(canvasX, canvasY, screenX, screenY, existingShape = null) {
       if (!overlayEl) return;
       const rect = canvasEl.getBoundingClientRect();
       const relX = screenX - rect.left;
@@ -1903,35 +2458,70 @@
       textarea.className = 'agile-text-node-input';
       textarea.style.left = `${relX}px`;
       textarea.style.top = `${relY}px`;
+      textarea.style.width = '400px';
       textarea.placeholder = 'Type text...';
 
+      if (existingShape) {
+        textarea.value = existingShape.text || '';
+      }
+
       overlayEl.appendChild(textarea);
-      setTimeout(() => textarea.focus(), 10);
+      setTimeout(() => {
+        textarea.focus();
+        if (existingShape) {
+          textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        }
+      }, 10);
 
       const autoExpand = () => {
         textarea.style.height = 'auto';
-        textarea.style.height = `${Math.max(36, textarea.scrollHeight)}px`;
-        textarea.style.width = 'auto';
-        textarea.style.width = `${Math.max(100, textarea.scrollWidth + 16)}px`;
+        textarea.style.width = '400px';
+        const scrollW = textarea.scrollWidth;
+        if (scrollW > 400 && scrollW <= 720) {
+          textarea.style.width = `${scrollW + 16}px`;
+        } else if (scrollW > 720) {
+          textarea.style.width = '720px';
+        } else {
+          textarea.style.width = '400px';
+        }
+        textarea.style.height = `${Math.max(40, textarea.scrollHeight)}px`;
       };
 
       textarea.addEventListener('input', autoExpand);
+      autoExpand();
 
       let committed = false;
       const commitText = () => {
         if (committed) return;
         committed = true;
         const val = textarea.value.trim();
+        const currentWidth = parseFloat(textarea.style.width) || 400;
+        const finalWidth = Math.min(720, Math.max(400, currentWidth));
+
         if (val) {
-          engineState.shapes.push({
-            id: Date.now(),
-            type: 'text',
-            x: canvasX,
-            y: canvasY,
-            text: val,
-            color: engineState.color
-          });
+          if (existingShape) {
+            existingShape.text = val;
+            existingShape.width = finalWidth;
+          } else {
+            const newShape = {
+              id: Date.now(),
+              type: 'text',
+              x: canvasX,
+              y: canvasY,
+              text: val,
+              color: engineState.color,
+              width: finalWidth
+            };
+            engineState.shapes.push(newShape);
+            engineState.selectedShapeId = newShape.id;
+          }
+        } else if (existingShape) {
+          engineState.shapes = engineState.shapes.filter(s => s.id !== existingShape.id);
+          if (engineState.selectedShapeId === existingShape.id) {
+            engineState.selectedShapeId = null;
+          }
         }
+
         if (textarea.parentElement) {
           textarea.parentElement.removeChild(textarea);
         }
@@ -1946,6 +2536,34 @@
         }
       });
     }
+
+    /* ── Double-Click Handler for Text Re-Editing ── */
+    canvasEl.addEventListener('dblclick', (e) => {
+      if (engineState.mode !== 'whiteboard') return;
+      const canvasCoords = screenToCanvasCoordinates(e.clientX, e.clientY);
+      const clickedShape = hitTestShape(canvasCoords.x, canvasCoords.y);
+      if (clickedShape && clickedShape.type === 'text') {
+        const screenPos = canvasToScreenCoordinates(clickedShape.x, clickedShape.y);
+        const rect = canvasEl.getBoundingClientRect();
+        spawnAutoExpandingTextNode(clickedShape.x, clickedShape.y, screenPos.x + rect.left, screenPos.y + rect.top, clickedShape);
+      }
+    });
+
+    /* ── Keyboard Shortcuts: Delete selected shape & Escape deselect ── */
+    window.addEventListener('keydown', (e) => {
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+        return;
+      }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && engineState.selectedShapeId) {
+        engineState.shapes = engineState.shapes.filter(s => s.id !== engineState.selectedShapeId);
+        engineState.selectedShapeId = null;
+        renderCanvas();
+      } else if (e.key === 'Escape' && engineState.selectedShapeId) {
+        engineState.selectedShapeId = null;
+        renderCanvas();
+      }
+    });
 
     /* ── 9. Toolbar Mode Switcher & Tools Controller ── */
     function setMode(newMode) {
@@ -1962,14 +2580,14 @@
         canvasEl.classList.remove('mode-chat-active');
         if (canvasSpace) {
           canvasSpace.classList.add('mode-whiteboard-active');
-          canvasSpace.setAttribute('data-tool', 'hand');
+          canvasSpace.setAttribute('data-tool', 'text');
         }
 
-        // Default preselected tool in Whiteboard mode is Palm (Pan/Hand) tool
-        engineState.tool = 'hand';
+        // Default preselected tool in Whiteboard mode is Text tool
+        engineState.tool = 'text';
         toolBtns.forEach((b) => b && b.classList.remove('agile-tool-badge--active'));
-        const palmBtn = getEl('tool-btn-palm');
-        if (palmBtn) palmBtn.classList.add('agile-tool-badge--active');
+        const textBtn = getEl('tool-btn-text');
+        if (textBtn) textBtn.classList.add('agile-tool-badge--active');
 
       } else {
         // Switching to AI Mode: RESET ZOOM scale to default 1.0
@@ -2019,6 +2637,7 @@
 
     // Tools Selection Buttons
     const toolBtns = [
+      getEl('tool-btn-move'),
       getEl('tool-btn-palm'),
       getEl('tool-btn-text'),
       getEl('tool-btn-rect'),
@@ -2034,7 +2653,7 @@
         }
         toolBtns.forEach((b) => b && b.classList.remove('agile-tool-badge--active'));
         btn.classList.add('agile-tool-badge--active');
-        const selectedTool = btn.getAttribute('data-tool') || 'hand';
+        const selectedTool = btn.getAttribute('data-tool') || 'move';
         engineState.tool = selectedTool;
         if (canvasSpaceEl) canvasSpaceEl.setAttribute('data-tool', selectedTool);
       });
@@ -2066,7 +2685,10 @@
       const key = e.key ? e.key.toLowerCase() : '';
 
       // Drawing Tool Shortcuts
-      if (key === 'p') {
+      if (key === 'v') {
+        const btn = getEl('tool-btn-move');
+        if (btn) btn.click();
+      } else if (key === 'p') {
         const btn = getEl('tool-btn-palm');
         if (btn) btn.click();
       } else if (key === 't') {
