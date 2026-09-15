@@ -2086,18 +2086,15 @@
       if (engineState.selectedShapeIds && engineState.selectedShapeIds.length === 1) {
         const selectedShape = engineState.shapes.find(s => s.id === engineState.selectedShapeIds[0]);
         if (selectedShape) {
-          const isBorderOrHandleHit = hitTestShapeBorder(canvasCoords.x, canvasCoords.y);
-          if (isBorderOrHandleHit && isBorderOrHandleHit.id === selectedShape.id) {
-            const handle = getShapeBorderResizeHandle(canvasCoords.x, canvasCoords.y, selectedShape);
-            if (handle) {
-              engineState.isResizingShape = true;
-              engineState.resizeHandle = handle;
-              engineState.dragStartCanvas = canvasCoords;
-              engineState.shapeInitialState = JSON.parse(JSON.stringify(selectedShape));
-              canvasEl.setPointerCapture(e.pointerId);
-              renderCanvas();
-              return;
-            }
+          const handle = hitTestResizeHandle(canvasCoords.x, canvasCoords.y, selectedShape);
+          if (handle) {
+            engineState.isResizingShape = true;
+            engineState.resizeHandle = handle;
+            engineState.dragStartCanvas = canvasCoords;
+            engineState.shapeInitialState = JSON.parse(JSON.stringify(selectedShape));
+            canvasEl.setPointerCapture(e.pointerId);
+            renderCanvas();
+            return;
           }
         }
       }
