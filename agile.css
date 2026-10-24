@@ -6,11 +6,11 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --agile-primary-dark: var(--agile-primary-green);
+  --agile-primary-dark: var(--agile-primary-green, #56D364);
   --agile-primary-light: #008A25;
-  --agile-card-bg: var(--agile-frame-bg);
+  --agile-card-bg: var(--agile-frame-bg, #191919);
   --agile-streak-empty: #102310;
-  --agile-bg-dark: var(--agile-canvas-bg);
+  --agile-bg-dark: var(--agile-canvas-bg, #000000);
 }
 
 /* ── Workspace Main Layout ── */
@@ -231,11 +231,11 @@
   width: 9px;
   height: 9px;
   border-radius: 2px;
-  background-color: var(--agile-streak-empty);
+  background-color: var(--agile-streak-empty, #102310);
 }
 
 .agile-streak-block--active {
-  background-color: var(--agile-primary-dark) !important;
+  background-color: var(--agile-primary-dark, #56D364) !important;
 }
 
 /* Bottom Extreme Feedback Card */

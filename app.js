@@ -35,7 +35,25 @@ document.addEventListener('DOMContentLoaded', () => {
   initSettingsModal();
   loadSavedSessions();
   checkDatabaseStatus();
+  initQuizStreakMatrix();
 });
+
+/* ─── Streak Matrix Dots ─── */
+function initQuizStreakMatrix() {
+  const streakMatrix = document.getElementById('agile-streak-matrix');
+  if (!streakMatrix) return;
+  let matrixHTML = '';
+  for (let col = 0; col < 16; col++) {
+    matrixHTML += `<div class="agile-streak-col">`;
+    for (let row = 0; row < 4; row++) {
+      const idx = col * 4 + row;
+      const isActive = idx % 5 === 0 || idx % 7 === 0 || idx > 52;
+      matrixHTML += `<div class="agile-streak-block ${isActive ? 'agile-streak-block--active' : ''}"></div>`;
+    }
+    matrixHTML += `</div>`;
+  }
+  streakMatrix.innerHTML = matrixHTML;
+}
 
 /* ─── Live Clock ─── */
 function initClock() {
@@ -230,7 +248,7 @@ function updateActionButtonState() {
   } else if (textarea.value.trim().length > 0) {
     micIcon.textContent = 'arrow_upward';
     micBtn.style.color = '#0a0a0a';
-    micBtn.style.background = '#4caf50';
+    micBtn.style.background = '#56D364';
     micBtn.style.borderRadius = '50%';
     micBtn.setAttribute('aria-label', 'Send message');
   } else {
@@ -263,7 +281,7 @@ function initMicAndSendButton() {
       const icon = document.getElementById('mic-btn-icon');
       if (isListening) {
         icon.textContent = 'mic';
-        micBtn.style.color = '#4caf50';
+        micBtn.style.color = '#56D364';
         micBtn.style.animation = 'micPulse 1.5s ease-in-out infinite';
       } else {
         icon.textContent = 'mic';
@@ -1046,11 +1064,11 @@ function renderDynamicQuizCard(response, chatThread) {
   card.className = 'ai-response-card';
 
   const difficultyColors = {
-    beginner: '#4caf50',
-    intermediate: '#ff9800',
-    advanced: '#f44336'
+    beginner: '#56D364',
+    intermediate: '#D0D0D0',
+    advanced: '#ef5350'
   };
-  const diffColor = difficultyColors[response.difficulty] || '#a2a2a2';
+  const diffColor = difficultyColors[response.difficulty] || '#D0D0D0';
 
   let optionsHtml = '';
   response.options.forEach(opt => {
@@ -1068,7 +1086,7 @@ function renderDynamicQuizCard(response, chatThread) {
       <span>${escapeHtml(response.topic || 'Design Systems')}</span>
     </div>
     <div class="quiz-card" id="${cardId}">
-      <div class="quiz-card__badge" style="border-left: 3px solid ${diffColor}; padding-left: 8px;">
+      <div class="quiz-card__badge" >
         ${escapeHtml(response.topic || 'Design Systems')} <span style="color: ${diffColor}; margin-left: 8px; font-size: 11px; text-transform: uppercase;">${response.difficulty || ''}</span>
       </div>
       <div class="quiz-card__question">
@@ -1077,7 +1095,7 @@ function renderDynamicQuizCard(response, chatThread) {
       <div class="quiz-options-list">
         ${optionsHtml}
       </div>
-      ${response.hint ? `<div style="margin-top: 10px; padding: 8px 12px; background: rgba(255,152,0,0.08); border-radius: 8px; font-size: 12px; color: #a2a2a2;"><span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle; margin-right: 4px;">lightbulb</span> ${escapeHtml(response.hint)}</div>` : ''}
+      ${response.hint ? `<div style="margin-top: 10px; padding: 8px 12px; background: rgba(255,255,255,0.04); border-radius: 12px; font-size: 12px; color: #D0D0D0;"><span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle; margin-right: 4px;">lightbulb</span> ${escapeHtml(response.hint)}</div>` : ''}
     </div>
   `;
 
@@ -1100,8 +1118,8 @@ window.handleDynamicQuizAnswer = function(btn, isCorrect, optionId, optionText) 
 
   // Highlight selected
   if (isCorrect) {
-    btn.style.borderColor = '#4caf50';
-    btn.style.background = 'rgba(76, 175, 80, 0.1)';
+    btn.style.borderColor = '#56D364';
+    btn.style.background = 'rgba(86, 211, 100, 0.1)';
     btn.style.opacity = '1';
   } else {
     btn.style.borderColor = '#ef5350';
@@ -1129,23 +1147,23 @@ function renderEvaluationCard(response, chatThread) {
   card.className = 'ai-response-card';
 
   const statusIcon = response.isCorrect ? 'check_circle' : 'cancel';
-  const statusColor = response.isCorrect ? '#4caf50' : '#ef5350';
+  const statusColor = response.isCorrect ? '#56D364' : '#ef5350';
   const statusText = response.isCorrect ? 'Correct!' : 'Not quite right';
 
   let refsHtml = '';
   if (response.references && response.references.length > 0) {
-    refsHtml = '<div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #2f2f2f;"><div style="font-size: 11px; color: #707070; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">References</div>';
+    refsHtml = '<div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);"><div style="font-size: 11px; color: #8C8C8C; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">References</div>';
     response.references.forEach(ref => {
-      refsHtml += `<div style="font-size: 12px; margin-bottom: 4px;"><a href="${escapeHtml(ref.url || '#')}" target="_blank" rel="noopener" style="color: #64B5F6; text-decoration: none;">${escapeHtml(ref.title)}</a> <span style="color: #707070;">— ${escapeHtml(ref.source || '')}</span></div>`;
+      refsHtml += `<div style="font-size: 12px; margin-bottom: 4px;"><a href="${escapeHtml(ref.url || '#')}" target="_blank" rel="noopener" style="color: #56D364; text-decoration: none;">${escapeHtml(ref.title)}</a> <span style="color: #8C8C8C;">— ${escapeHtml(ref.source || '')}</span></div>`;
     });
     refsHtml += '</div>';
   }
 
   let whyWrongHtml = '';
   if (response.whyOthersWrong) {
-    whyWrongHtml = '<div style="margin-top: 12px;"><div style="font-size: 11px; color: #707070; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Option Breakdown</div>';
+    whyWrongHtml = '<div style="margin-top: 12px;"><div style="font-size: 11px; color: #8C8C8C; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Option Breakdown</div>';
     for (const [key, reason] of Object.entries(response.whyOthersWrong)) {
-      whyWrongHtml += `<div style="font-size: 12px; margin-bottom: 4px; padding: 4px 8px; background: rgba(255,255,255,0.03); border-radius: 4px;"><strong style="color: #e3e3e3;">${key}:</strong> <span style="color: #a2a2a2;">${escapeHtml(reason)}</span></div>`;
+      whyWrongHtml += `<div style="font-size: 12px; margin-bottom: 4px; padding: 4px 8px; background: rgba(255,255,255,0.03); border-radius: 4px;"><strong style="color: #FFFFFF;">${key}:</strong> <span style="color: #D0D0D0;">${escapeHtml(reason)}</span></div>`;
     }
     whyWrongHtml += '</div>';
   }
@@ -1156,18 +1174,18 @@ function renderEvaluationCard(response, chatThread) {
       <span style="color: ${statusColor}; font-weight: 600;">${statusText}</span>
     </div>
     <div class="ai-response-body">
-      <div style="font-size: 14px; line-height: 1.6; color: #e3e3e3; margin-bottom: 12px;">
+      <div style="font-size: 14px; line-height: 1.6; color: #FFFFFF; margin-bottom: 12px;">
         ${formatMarkdown(response.feedback || '')}
       </div>
       ${response.deepDive ? `
-      <div style="margin-top: 12px; padding: 12px; background: rgba(100, 181, 246, 0.06); border-left: 3px solid #64B5F6; border-radius: 6px;">
-        <div style="font-size: 11px; color: #64B5F6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Deep Dive</div>
-        <div style="font-size: 13px; line-height: 1.5; color: #a2a2a2;">${formatMarkdown(response.deepDive)}</div>
+      <div style="margin-top: 12px; padding: 12px; background: rgba(86, 211, 100, 0.06); border-left: 3px solid #56D364; border-radius: 12px;">
+        <div style="font-size: 11px; color: #56D364; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Deep Dive</div>
+        <div style="font-size: 13px; line-height: 1.5; color: #D0D0D0;">${formatMarkdown(response.deepDive)}</div>
       </div>` : ''}
       ${whyWrongHtml}
       ${refsHtml}
       <div style="margin-top: 16px; text-align: center;">
-        <button class="quiz-option-btn" onclick="sendPrompt('Next question please', false)" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); cursor: pointer;">
+        <button class="quiz-option-btn" onclick="sendPrompt('Next question please', false)" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; background: rgba(86, 211, 100, 0.1); border: 1px solid rgba(86, 211, 100, 0.3); cursor: pointer;">
           <span class="material-symbols-outlined" style="font-size: 16px;">arrow_forward</span>
           <span>Next Question</span>
         </button>
@@ -1192,9 +1210,9 @@ function renderTextResponse(text, chatThread) {
     const parsed = JSON.parse(text);
     if (parsed.content) content = parsed.content;
     if (parsed.references && parsed.references.length > 0) {
-      refsHtml = '<div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #2f2f2f;"><div style="font-size: 11px; color: #707070; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">References</div>';
+      refsHtml = '<div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06);"><div style="font-size: 11px; color: #8C8C8C; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">References</div>';
       parsed.references.forEach(ref => {
-        refsHtml += `<div style="font-size: 12px; margin-bottom: 4px;"><a href="${escapeHtml(ref.url || '#')}" target="_blank" rel="noopener" style="color: #64B5F6; text-decoration: none;">${escapeHtml(ref.title)}</a> <span style="color: #707070;">— ${escapeHtml(ref.source || '')}</span></div>`;
+        refsHtml += `<div style="font-size: 12px; margin-bottom: 4px;"><a href="${escapeHtml(ref.url || '#')}" target="_blank" rel="noopener" style="color: #56D364; text-decoration: none;">${escapeHtml(ref.title)}</a> <span style="color: #8C8C8C;">— ${escapeHtml(ref.source || '')}</span></div>`;
       });
       refsHtml += '</div>';
     }
@@ -1207,7 +1225,7 @@ function renderTextResponse(text, chatThread) {
       <span class="material-symbols-outlined">smart_toy</span>
       <span>Design Mentor</span>
     </div>
-    <div class="ai-response-body" style="font-size: 14px; line-height: 1.7; color: #e3e3e3;">
+    <div class="ai-response-body" style="font-size: 14px; line-height: 1.7; color: #FFFFFF;">
       ${formatMarkdown(content)}
       ${refsHtml}
     </div>
@@ -1225,14 +1243,14 @@ function formatMarkdown(md) {
 
   // 2. Code blocks (```code```) — must come before other processing
   text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, function(match, lang, code) {
-    return '<pre style="background: #1a1a1a; border: 1px solid #2f2f2f; border-radius: 8px; padding: 12px 16px; margin: 10px 0; overflow-x: auto; font-family: \'JetBrains Mono\', monospace; font-size: 12px; color: #a2a2a2; line-height: 1.5;">' + escapeHtml(code.trim()) + '</pre>';
+    return '<pre style="background: #1a1a1a; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px 16px; margin: 10px 0; overflow-x: auto; font-family: \'JetBrains Mono\', monospace; font-size: 12px; color: #D0D0D0; line-height: 1.5;">' + escapeHtml(code.trim()) + '</pre>';
   });
 
   // 3. Inline code (`code`)
-  text = text.replace(/`([^`]+)`/g, '<code style="background: #1a1a1a; border: 1px solid #2f2f2f; border-radius: 4px; padding: 2px 6px; font-family: \'JetBrains Mono\', monospace; font-size: 12px; color: #81c784;">$1</code>');
+  text = text.replace(/`([^`]+)`/g, '<code style="background: #1a1a1a; border: 1px solid rgba(255,255,255,0.06); border-radius: 4px; padding: 2px 6px; font-family: \'JetBrains Mono\', monospace; font-size: 12px; color: #56D364;">$1</code>');
 
   // 4. Headers (process line by line)
-  text = text.replace(/^#### (.+)$/gm, '<h4 style="color: #e3e3e3; font-size: 14px; font-weight: 600; margin: 14px 0 6px;">$1</h4>');
+  text = text.replace(/^#### (.+)$/gm, '<h4 style="color: #FFFFFF; font-size: 14px; font-weight: 600; margin: 14px 0 6px;">$1</h4>');
   text = text.replace(/^### (.+)$/gm, '<h3 style="color: #fff; font-size: 15px; font-weight: 600; margin: 16px 0 6px;">$1</h3>');
   text = text.replace(/^## (.+)$/gm, '<h2 style="color: #fff; font-size: 17px; font-weight: 600; margin: 20px 0 8px;">$1</h2>');
   text = text.replace(/^# (.+)$/gm, '<h1 style="color: #fff; font-size: 19px; font-weight: 700; margin: 22px 0 10px;">$1</h1>');
@@ -1251,10 +1269,10 @@ function formatMarkdown(md) {
   text = text.replace(/^\d+\. (.+)$/gm, '<li style="margin-bottom: 4px; padding-left: 4px;">$1</li>');
 
   // 8. Horizontal rules
-  text = text.replace(/^---+$/gm, '<hr style="border: none; border-top: 1px solid #2f2f2f; margin: 16px 0;">');
+  text = text.replace(/^---+$/gm, '<hr style="border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 16px 0;">');
 
   // 9. Links [text](url)
-  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color: #64B5F6; text-decoration: none;">$1</a>');
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color: #56D364; text-decoration: none;">$1</a>');
 
   // 10. Paragraphs — double newlines become paragraph breaks
   text = text.replace(/\n\n+/g, '</p><p style="margin: 10px 0;">');
@@ -1398,15 +1416,12 @@ function initNewChatButtons() {
     }
   }
 
-  // Close on Escape
+  // Close dropdown / sidebar on Escape
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      closeModeSwitcher();
+      if (window._closeSidebar) window._closeSidebar();
     }
   });
-
-  // Expose for sidebar/overlay close
-  window._closeModeSwitcher = closeModeSwitcher;
 }
 
 function initCuratedChatClicks() {
@@ -1429,7 +1444,7 @@ function initChipInteractions() {
       const prompt = chip.getAttribute('data-prompt') || chip.querySelector('.chip__label').textContent.trim();
       sendPrompt(prompt);
 
-      chip.style.boxShadow = '0 0 0 2px rgba(76, 175, 80, 0.3)';
+      chip.style.boxShadow = '0 0 0 2px rgba(86, 211, 100, 0.3)';
       setTimeout(() => {
         chip.style.boxShadow = '';
       }, 400);

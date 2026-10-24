@@ -25,6 +25,9 @@
   --agile-text-secondary:  #D0D0D0; /* Body text */
   --agile-text-muted:      #8C8C8C; /* Sub-labels, metadata, timestamps */
   --agile-text-dark:       #000000; /* Text on green active pills */
+  --text-primary:          #FFFFFF;
+  --text-secondary:        #D0D0D0;
+  --text-muted:            #8C8C8C;
 
   /* ── Corner Geometry Radii ── */
   --agile-radius-pill:     9999px; /* Buttons, CTAs, Segmented Toggles */
@@ -48,4 +51,15 @@
     opacity: 1;
     transform: scale(1) translateY(0);
   }
+}
+
+/* ── Legacy aliases (styles.css still references these names) ──
+   Previously undefined, which silently removed border-radius and borders
+   from cards, rows and bubbles in Quiz mode. */
+:root {
+  --radius-frame:   var(--agile-radius-frame);
+  --radius-card:    var(--agile-radius-card);
+  --border-subtle:  var(--agile-border-subtle);
+  --border-input:   var(--agile-border-strong);
+  --bg-input:       var(--agile-card-bg);
 }
