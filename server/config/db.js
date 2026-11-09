@@ -8,21 +8,25 @@ try {
 
 const uri = process.env.MONGODB_URI;
 if (!uri) {
-  console.error('❌ MONGODB_URI is not defined in environment or .env file.');
+  console.warn('MONGODB_URI is not set. Running without a database: the app falls back to browser localStorage.');
 }
 
-const client = new MongoClient(uri || '', {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
-});
+// Only create the client when a connection string exists. Creating it with an
+// empty string throws at startup and takes the whole server down.
+const client = uri
+  ? new MongoClient(uri, {
+      serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+      }
+    })
+  : null;
 
 let db = null;
 
 async function connectDB() {
-  if (!uri) return null;
+  if (!client) return null;
   try {
     await client.connect();
     db = client.db("design_system_ai");

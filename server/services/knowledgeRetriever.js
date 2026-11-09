@@ -35,7 +35,9 @@ function loadSources() {
  */
 function getContext(topic, userMessage = '') {
   const sources = loadSources();
-  const topicConfig = sources.topics[topic];
+  // Unknown topics (e.g. Agile challenge categories like "SaaS") fall back to
+  // the default knowledge base instead of sending the model no context at all.
+  const topicConfig = sources.topics[topic] || sources.topics['design-systems'];
 
   if (!topicConfig || !topicConfig.files) {
     console.warn(`[KnowledgeRetriever] No knowledge files found for topic: "${topic}"`);
