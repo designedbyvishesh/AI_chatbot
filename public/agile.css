@@ -1827,6 +1827,14 @@
   word-break: break-word;
 }
 
+.agile-modal-subtext {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.5;
+  max-width: 320px;
+  margin-bottom: 24px;
+}
+
 .agile-modal-actions {
   display: flex;
   align-items: center;
