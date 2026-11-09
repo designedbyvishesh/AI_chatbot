@@ -2964,6 +2964,12 @@
               history
             })
           });
+          if (res.status === 429) {
+            // Over the per-minute or daily limit: show the server's friendly message
+            const data = await res.json().catch(() => ({}));
+            newCard.aiText = data.error || 'Rabbit needs a short breather. Try again in a minute.';
+            throw new Error('rate limited');
+          }
           if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
 
           const reader = res.body.getReader();

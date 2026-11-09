@@ -1,11 +1,11 @@
 require('dotenv').config();
 
 const express = require('express');
-const cors = require('cors');
 const path = require('path');
 const { connectDB, getDB, closeDB } = require('./server/config/db');
 const { ensureIndexes } = require('./server/config/indexes');
 const { requireUser, publicAuthConfig } = require('./server/auth/firebaseAuth');
+const { securityHeaders, corsPolicy, apiLimiter, aiLimiters } = require('./server/security');
 
 const sessionsRoutes = require('./server/routes/sessions.routes');
 const agileSessionsRoutes = require('./server/routes/agile-sessions.routes');
@@ -18,13 +18,21 @@ const meRoutes = require('./server/routes/me.routes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// Behind a hosting proxy (Render etc.) the visitor's real address is in X-Forwarded-For
+if (process.env.NODE_ENV === 'production' || process.env.RENDER) app.set('trust proxy', 1);
+
+app.use(securityHeaders());
+app.use('/api', corsPolicy(), apiLimiter);
 // Sessions carry canvas shapes and chat cards, so allow a little more than the 100 KB default
 app.use(express.json({ limit: '2mb' }));
-app.use(express.static(path.join(__dirname)));
+// Only the public/ folder is served, so server code, prompts and .env are never downloadable
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Connect Database
 connectDB().then(ensureIndexes);
+
+// ─── Health check for the hosting platform ───
+app.get('/api/health', (req, res) => res.json({ ok: true, db: Boolean(getDB()) }));
 
 // ─── Public: what the browser needs to start sign-in ───
 app.get('/api/auth/config', (req, res) => res.json(publicAuthConfig()));
@@ -45,8 +53,11 @@ app.use('/api/sessions', requireUser, sessionsRoutes);
 app.use('/api/agile-sessions', requireUser, agileSessionsRoutes);
 app.use('/api/flows', requireUser, flowsRoutes);
 app.use('/api/quizzes', requireUser, quizzesRoutes);
-app.use('/api/chat', requireUser, chatRoutes);
-app.use('/api/agile', requireUser, agileChallengeRoutes);
+app.use('/api/chat', requireUser, ...aiLimiters, chatRoutes);
+app.use('/api/agile', requireUser, ...aiLimiters, agileChallengeRoutes);
+
+// Unknown API paths get JSON, not an HTML page
+app.use('/api', (req, res) => res.status(404).json({ success: false, error: 'Not found' }));
 
 app.listen(PORT, () => {
   console.log(`Design AI Server running at http://localhost:${PORT}`);
