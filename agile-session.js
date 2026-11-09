@@ -716,6 +716,8 @@
     sessionState.activeSessionId = `agile-${Date.now()}`;
     sessionState.answers = { difficulty: 'Normal', category: 'Random', muteNotification: 'Yes', duration: '45 min' };
     sessionState.challenge = null;
+    sessionState.recordingEvents = [];
+    stopReplay();
 
     // Lock canvas while mandatory questions are active
     sessionState.isCanvasLocked = true;
@@ -815,6 +817,7 @@
       notesInputPast.value = session.notes.join('\n');
     }
 
+    stopReplay();
     mountRecorderWidget();
     if (window.AgileRecorderInstance) {
       window.AgileRecorderInstance.setDuration(2700);
@@ -822,6 +825,7 @@
         window.AgileRecorderInstance.showSkipControls();
       }
     }
+    prepareReplay(session);
 
     // Hide pre-prompting questions feed
     const feed = getEl('agile-questions-feed');
@@ -887,7 +891,8 @@
       window.AgileRecorderInstance = new RecordingTimer(`#${containerId}`, {
         onSave: (payload) => {
           console.log('Audio Recording Saved:', payload);
-        }
+        },
+        onPlayback: (t, kind) => handleReplayPlayback(t, kind)
       });
     }
   }
@@ -1080,6 +1085,8 @@
 
       if (window.AgileRecorderInstance && sessionState.answers.duration && sessionState.answers.duration !== 'No') {
         window.AgileRecorderInstance.startRecording();
+        // The challenge is the first thing Rabbit "says" in the recording
+        logRecordingEvent({ type: 'ai', text: challengeCard.aiText, cardId: challengeCard.id, t: 0 });
       }
     });
   }
@@ -1127,6 +1134,200 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════════════════
+     SESSION RECORDING: event timeline, IndexedDB audio storage and replay
+     The microphone recording captures the user's voice (spoken prompts and
+     thinking aloud while whiteboarding). Rabbit's read-aloud voice cannot be
+     captured by a web page, so prompts and AI answers are stored as a timeline
+     (seconds into the recording) and Rabbit speaks them again during replay.
+     ═══════════════════════════════════════════════════════════════════════════ */
+  function logRecordingEvent(event) {
+    const recorder = window.AgileRecorderInstance;
+    if (!recorder || recorder.isHistoryMode || sessionState.mode === 'history') return;
+    if (recorder.state !== 'recording' && recorder.state !== 'paused') return;
+    if (!sessionState.recordingEvents) sessionState.recordingEvents = [];
+    const t = typeof event.t === 'number' ? event.t : (recorder.elapsedSecondsFloat || 0);
+    sessionState.recordingEvents.push({
+      t: Math.round(t * 10) / 10,
+      type: event.type,           // 'user' | 'ai'
+      via: event.via || undefined, // 'voice' | 'typed' for user events
+      text: String(event.text || '').slice(0, 2000),
+      cardId: event.cardId
+    });
+  }
+  window.AgileLogRecordingEvent = logRecordingEvent;
+
+  // While Rabbit reads an answer aloud in a live session, its voice comes out of
+  // the speakers and leaks into the mic as a quiet, noisy copy. Mute the mic in
+  // the recording during that time (plus a short tail for room echo); replay
+  // speaks the answer again cleanly at the same moment.
+  (function watchReadAloudForRecording() {
+    if (!('speechSynthesis' in window)) return;
+    let mutedUntil = 0;
+    setInterval(() => {
+      const recorder = window.AgileRecorderInstance;
+      if (!recorder || !recorder.setInputMuted || recorder.isHistoryMode || sessionState.mode === 'history') return;
+      const now = Date.now();
+      if (window.speechSynthesis.speaking) mutedUntil = now + 350;
+      const shouldMute = now < mutedUntil;
+      if (shouldMute !== !!recorder.inputMuted) recorder.setInputMuted(shouldMute);
+    }, 100);
+  })();
+
+  const RECORDING_DB = 'rabbit-agile-recordings';
+  function openRecordingDb() {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) return reject(new Error('IndexedDB unavailable'));
+      const req = indexedDB.open(RECORDING_DB, 1);
+      req.onupgradeneeded = () => req.result.createObjectStore('audio');
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function saveRecordingBlob(sessionId, blob) {
+    try {
+      const db = await openRecordingDb();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction('audio', 'readwrite');
+        tx.objectStore('audio').put(blob, sessionId);
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+      db.close();
+      return true;
+    } catch (e) {
+      console.warn('Could not save recording:', e);
+      return false;
+    }
+  }
+
+  async function loadRecordingBlob(sessionId) {
+    try {
+      const db = await openRecordingDb();
+      const blob = await new Promise((resolve, reject) => {
+        const req = db.transaction('audio', 'readonly').objectStore('audio').get(sessionId);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+      db.close();
+      return blob;
+    } catch (e) {
+      console.warn('Could not load recording:', e);
+      return null;
+    }
+  }
+
+  const replay = { events: [], lastT: 0, playing: false, objectUrl: null, captionTimer: null, token: 0 };
+
+  function stopReplay() {
+    replay.token++;
+    const audio = window.AgileRecorderInstance && window.AgileRecorderInstance.audioElement;
+    if (audio) audio.volume = 1;
+    replay.events = [];
+    replay.lastT = 0;
+    replay.playing = false;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (replay.objectUrl) { URL.revokeObjectURL(replay.objectUrl); replay.objectUrl = null; }
+    hideReplayCaption();
+  }
+
+  async function prepareReplay(session) {
+    const token = ++replay.token;
+    replay.events = Array.isArray(session.recordingEvents)
+      ? session.recordingEvents.slice().sort((a, b) => a.t - b.t)
+      : [];
+    replay.lastT = 0;
+
+    let url = null;
+    let blob = null;
+    if (session.hasRecording) {
+      blob = await loadRecordingBlob(session.id);
+      if (token !== replay.token) return; // user opened another session meanwhile
+      if (blob) { url = URL.createObjectURL(blob); replay.objectUrl = url; }
+    } else if (typeof session.audioUrl === 'string' && session.audioUrl.startsWith('data:audio')) {
+      url = session.audioUrl; // sessions saved before IndexedDB storage
+    }
+
+    const recorder = window.AgileRecorderInstance;
+    if (url && recorder && recorder.loadRecording) {
+      recorder.loadRecording(url, session.recordingDuration || 0);
+      // Real waveform of the recording (moves only where someone actually spoke)
+      if (recorder.loadWaveformFromBlob) {
+        if (!blob) { try { blob = await (await fetch(url)).blob(); } catch (e) {} }
+        if (blob && token === replay.token) recorder.loadWaveformFromBlob(blob);
+      }
+    }
+  }
+
+  function speechTextFor(text) {
+    return String(text || '').replace(/^\s*[-•*]\s+/gm, '').replace(/[`#*_]/g, '').replace(/\s+/g, ' ').trim();
+  }
+
+  // Replay highlight: green border on the card being spoken (no caption)
+  function showReplayCaption(event) {
+    document.querySelectorAll('.agile-spatial-chat-node.is-replaying').forEach(n => n.classList.remove('is-replaying'));
+    const card = event.cardId != null ? getEl(`spatial-card-${event.cardId}`) : null;
+    if (card) card.classList.add('is-replaying');
+
+    clearTimeout(replay.captionTimer);
+    const ms = Math.min(15000, 2500 + speechTextFor(event.text).length * 55);
+    replay.captionTimer = setTimeout(hideReplayCaption, ms);
+  }
+
+  function hideReplayCaption() {
+    clearTimeout(replay.captionTimer);
+    document.querySelectorAll('.agile-spatial-chat-node.is-replaying').forEach(n => n.classList.remove('is-replaying'));
+  }
+
+  function fireReplayEvent(event) {
+    showReplayCaption(event);
+    // The user's own voice is already in the audio; Rabbit's answers are spoken again here
+    if (event.type === 'ai' && 'speechSynthesis' in window) {
+      const utter = new SpeechSynthesisUtterance(speechTextFor(event.text));
+      utter.lang = navigator.language || 'en-US';
+      utter.rate = 1.05;
+      utter.volume = 1;
+      const audio = window.AgileRecorderInstance && window.AgileRecorderInstance.audioElement;
+      // Lower the recording under Rabbit's voice so it is clear, then restore
+      const restore = () => { if (audio && !window.speechSynthesis.speaking) audio.volume = 1; };
+      utter.onstart = () => { if (audio) audio.volume = 0.35; };
+      utter.onend = () => setTimeout(restore, 50);
+      utter.onerror = () => setTimeout(restore, 50);
+      window.speechSynthesis.speak(utter);
+    }
+  }
+
+  function handleReplayPlayback(t, kind) {
+    if (sessionState.mode !== 'history') return;
+    if (kind === 'pause') {
+      replay.playing = false;
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      replay.lastT = t;
+      return;
+    }
+    if (kind === 'seek') {
+      // Jumping around: stop current speech and continue from the new position
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      hideReplayCaption();
+      replay.lastT = t < 0.3 ? -1 : t;
+      return;
+    }
+    if (kind === 'play') {
+      replay.playing = true;
+      // Starting from the very beginning: include events at t = 0 (the challenge)
+      if (t < 0.3) replay.lastT = -1;
+      return;
+    }
+    // 'time': fire every event between the last position and now
+    if (!replay.playing) return;
+    if (t < replay.lastT || t - replay.lastT > 3) { replay.lastT = t; return; }
+    replay.events.forEach(ev => {
+      if (ev.t > replay.lastT && ev.t <= t) fireReplayEvent(ev);
+    });
+    replay.lastT = t;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
      PERMANENT SAVE SESSION BUTTON HANDLER
      ═══════════════════════════════════════════════════════════════════════════ */
   function initHeaderSaveButton() {
@@ -1136,13 +1337,29 @@
     saveBtn.addEventListener('click', async () => {
       saveBtn.style.opacity = '0.7';
 
-      let audioUrl = null;
-      if (window.AgileRecorderInstance) {
-        if (window.AgileRecorderInstance.saveSession) {
-          window.AgileRecorderInstance.saveSession();
-        }
-        if (window.AgileRecorderInstance.getAudioDataUrl) {
-          audioUrl = await window.AgileRecorderInstance.getAudioDataUrl();
+      if (!sessionState.activeSessionId) {
+        sessionState.activeSessionId = `agile-${Date.now()}`;
+      }
+
+      // Save the voice recording to IndexedDB (handles long recordings; localStorage is
+      // capped at ~5 MB and the API rejects large bodies), keyed by session id.
+      let hasRecording = false;
+      let recordingDuration = 0;
+      let recordingEvents = sessionState.recordingEvents || [];
+      const recorder = window.AgileRecorderInstance;
+      if (sessionState.mode === 'history') {
+        // Re-saving a past session (e.g. edited notes) keeps its original recording
+        const existing = sessionState.pastSessions.find(x => x.id === sessionState.activeSessionId) || {};
+        hasRecording = !!existing.hasRecording;
+        recordingDuration = existing.recordingDuration || 0;
+        recordingEvents = existing.recordingEvents || [];
+      }
+      if (recorder && sessionState.mode !== 'history') {
+        recordingDuration = recorder.elapsedSecondsFloat || 0;
+        if (recorder.saveSession) recorder.saveSession();
+        const blob = recorder.recordedBlob;
+        if (blob && blob.size > 0) {
+          hasRecording = await saveRecordingBlob(sessionState.activeSessionId, blob);
         }
       }
 
@@ -1171,8 +1388,14 @@
         dateLabel: 'today',
         timestamp: Date.now(),
         notes: currentNotes,
-        audioUrl: audioUrl || undefined,
-        chatCards: window.AgileSpatialCards ? JSON.parse(JSON.stringify(window.AgileSpatialCards)) : [],
+        hasRecording: hasRecording || undefined,
+        recordingDuration: hasRecording ? Math.round(recordingDuration * 10) / 10 : undefined,
+        // Timeline of what was said/asked during the recording, replayed alongside the audio
+        recordingEvents: recordingEvents.slice(0, 500),
+        // Read-aloud and streaming flags are live-only state, not saved
+        chatCards: window.AgileSpatialCards
+          ? JSON.parse(JSON.stringify(window.AgileSpatialCards, (k, v) => (['speak', 'spokenIdx', 'isStreaming'].includes(k) ? undefined : v)))
+          : [],
         shapes: window.AgileCanvasShapes ? JSON.parse(JSON.stringify(window.AgileCanvasShapes)) : [],
         chatHistory: window.AgileSpatialCards ? window.AgileSpatialCards.map(c => ({
           type: c.userText ? 'user' : 'ai',
@@ -1781,51 +2004,13 @@
           cardEl = document.createElement('div');
           cardEl.id = `spatial-card-${card.id}`;
           cardEl.className = 'agile-spatial-chat-node';
-          const userHtml = card.userText ? `
-            <div class="agile-chat-msg agile-chat-msg--user" style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end;">
-              <div class="agile-chat-bubble">${escapeAgileHtml(card.userText)}</div>
-              <div class="agile-chat-timestamp">${card.time || getFormattedISTTime()}</div>
-            </div>
-          ` : '';
-          const aiHtml = card.isLoading ? `
-            <div class="agile-chat-msg agile-chat-msg--ai" style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start;">
-              <div class="agile-chat-ai-loading">
-                <div class="agile-bunny-loader agile-bunny-loader--chat">
-                  <img src="assets/hidden_Bunny_SVG.svg" class="agile-bunny-loader__img" alt="AI fetching..." />
-                </div>
-              </div>
-            </div>
-          ` : ((card.aiText || card.text) ? `
-            <div class="agile-chat-msg agile-chat-msg--ai" style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start;">
-              <div class="agile-chat-prompt-body" style="white-space: pre-wrap;">${escapeAgileHtml(card.aiText || card.text)}</div>
-              <div class="agile-chat-timestamp">${card.time || getFormattedISTTime()}</div>
-            </div>
-          ` : '');
-          cardEl.innerHTML = userHtml + aiHtml;
           overlayEl.appendChild(cardEl);
-        } else {
-          // Keep innerHTML updated dynamically when loading completes
-          const userHtml = card.userText ? `
-            <div class="agile-chat-msg agile-chat-msg--user" style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end;">
-              <div class="agile-chat-bubble">${escapeAgileHtml(card.userText)}</div>
-              <div class="agile-chat-timestamp">${card.time || getFormattedISTTime()}</div>
-            </div>
-          ` : '';
-          const aiHtml = card.isLoading ? `
-            <div class="agile-chat-msg agile-chat-msg--ai" style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start;">
-              <div class="agile-chat-ai-loading">
-                <div class="agile-bunny-loader agile-bunny-loader--chat">
-                  <img src="assets/hidden_Bunny_SVG.svg" class="agile-bunny-loader__img" alt="AI fetching..." />
-                </div>
-              </div>
-            </div>
-          ` : ((card.aiText || card.text) ? `
-            <div class="agile-chat-msg agile-chat-msg--ai" style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start;">
-              <div class="agile-chat-prompt-body" style="white-space: pre-wrap;">${escapeAgileHtml(card.aiText || card.text)}</div>
-              <div class="agile-chat-timestamp">${card.time || getFormattedISTTime()}</div>
-            </div>
-          ` : '');
-          cardEl.innerHTML = userHtml + aiHtml;
+        }
+        // Only touch the DOM when the card changed, so buttons inside stay clickable while text streams in
+        const html = buildSpatialCardHtml(card);
+        if (cardEl._renderedHtml !== html) {
+          cardEl.innerHTML = html;
+          cardEl._renderedHtml = html;
         }
 
         // Measure actual rendered height in DOM and sync to data model
@@ -2776,12 +2961,14 @@
     });
 
     /* ── 10. Spatial AI Prompt Submission at (X_anchor, Y_max + offset) ── */
-    function handlePromptSubmission() {
+    function handlePromptSubmission(options = {}) {
       if (!promptInput) return;
       const text = promptInput.value.trim();
       if (!text) return;
+      const fromVoice = !!(options && options.fromVoice);
 
       promptInput.value = '';
+      updateSendMicButton();
       const msgId = Date.now();
       const timeStr = getFormattedISTTime();
 
@@ -2825,10 +3012,17 @@
         userText: text,
         aiText: '',
         isLoading: true,
+        // Asked by voice: read the answer aloud by default. Typed: silent until the speaker is tapped.
+        speak: fromVoice && voice.ttsSupported,
         time: timeStr
       };
+      // Only one answer reads aloud at a time
+      if (newCard.speak) stopAllSpeech();
 
       engineState.chatCards.push(newCard);
+      // Recording timeline: what the user asked, and how (spoken words are also in the audio)
+      logRecordingEvent({ type: 'user', via: fromVoice ? 'voice' : 'typed', text, cardId: newCard.id });
+      let aiStartT = null;
       renderCanvas(); // Synchronously render new card in DOM with loading bunny
 
       // Immediately measure newly created card's actual DOM height
@@ -2855,56 +3049,395 @@
         animateCanvasTranslationTo(targetTx, targetTy, 450);
       }
 
-      // 3. Fetch AI Response from API & Instantly Replace 36px Bunny Loader with Response
+      // 3. Stream the AI answer into the card word by word (and read it aloud if the speaker is on)
       (async () => {
-        let aiResultText = 'Here is an AI response generated for your query! You can ask unlimited questions and scroll vertically anytime. Toggle to Scribble mode to annotate on the shared 2D canvas space.';
-        const fetchStartTime = Date.now();
+        const history = [];
+        engineState.chatCards.forEach(c => {
+          if (c === newCard || !c.userText || c.isLoading) return;
+          history.push({ role: 'user', content: c.userText });
+          if (c.aiText) history.push({ role: 'assistant', content: c.aiText });
+        });
+
+        let renderQueued = false;
+        const queueRender = () => {
+          if (renderQueued) return;
+          renderQueued = true;
+          requestAnimationFrame(() => { renderQueued = false; renderCanvas(); });
+        };
 
         try {
-          const res = await fetch('/api/chat', {
+          const res = await fetch('/api/agile/ask/stream', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              conversationHistory: [
-                ...(sessionState.challenge && sessionState.challenge.prompt
-                  ? [{ role: 'assistant', content: `The designer is working on this whiteboard challenge: ${sessionState.challenge.prompt}` }]
-                  : []),
-                { role: 'user', content: text }
-              ],
-              topic: sessionState.answers.category || 'design-systems'
+              question: text,
+              challenge: (sessionState.challenge && sessionState.challenge.prompt) || '',
+              history
             })
           });
-          if (res.ok) {
-            const data = await res.json();
-            if (data.success && data.response) {
-              const readable = aiResponseToPlainText(data.response);
-              if (readable) aiResultText = readable;
+          if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          for (;;) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            if (!chunk) continue;
+            if (newCard.isLoading) {
+              const rec = window.AgileRecorderInstance;
+              aiStartT = rec ? rec.elapsedSecondsFloat : null;
+              newCard.isLoading = false;
+              newCard.isStreaming = true;
+              // Trim leading whitespace the model sometimes starts with
+              newCard.aiText = chunk.replace(/^\s+/, '');
+            } else {
+              newCard.aiText += chunk;
             }
+            speakNewSentences(newCard, false);
+            queueRender();
           }
+          if (!newCard.aiText.trim()) throw new Error('Empty answer');
         } catch (e) {
-          console.log('AI Chat Fetching fallback:', e);
+          console.log('AI answer failed:', e);
+          if (!newCard.aiText || !newCard.aiText.trim()) {
+            newCard.aiText = 'Rabbit could not answer right now. Keep going and try again in a moment.';
+          }
         }
 
-        // Ensure loader is visible for at least 800ms so peekaboo animation plays smoothly before instant disappearance
-        const elapsed = Date.now() - fetchStartTime;
-        if (elapsed < 800) {
-          await new Promise(r => setTimeout(r, 800 - elapsed));
-        }
+        newCard.aiText = newCard.aiText.trim();
+        newCard.isLoading = false;
+        newCard.isStreaming = false;
+        logRecordingEvent({ type: 'ai', text: newCard.aiText, cardId: newCard.id, t: aiStartT == null ? undefined : aiStartT });
+        speakNewSentences(newCard, true);
+        renderCanvas();
 
-        // INSTANT DISAPPEARANCE of 36px SVG Bunny Loader -> Render AI Text Message
         const aiMsgContainer = getEl(`agile-ai-msg-${msgId}`);
         if (aiMsgContainer) {
           aiMsgContainer.innerHTML = `
-            <div class="agile-chat-prompt-body" style="white-space: pre-wrap;">${escapeAgileHtml(aiResultText)}</div>
+            <div class="agile-chat-prompt-body" style="white-space: pre-wrap;">${escapeAgileHtml(newCard.aiText)}</div>
             <div class="agile-chat-timestamp">${getFormattedISTTime()}</div>
           `;
           if (feed) feed.scrollTop = feed.scrollHeight;
         }
-
-        newCard.aiText = aiResultText;
-        newCard.isLoading = false;
-        renderCanvas();
       })();
+    }
+
+
+    function buildSpatialCardHtml(card) {
+      const userHtml = card.userText ? `
+            <div class="agile-chat-msg agile-chat-msg--user" style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end;">
+              <div class="agile-chat-bubble">${escapeAgileHtml(card.userText)}</div>
+              <div class="agile-chat-timestamp">${card.time || getFormattedISTTime()}</div>
+            </div>
+          ` : '';
+
+      if (card.isLoading) {
+        return userHtml + `
+            <div class="agile-chat-msg agile-chat-msg--ai" style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start;">
+              <div class="agile-chat-ai-loading">
+                <div class="agile-bunny-loader agile-bunny-loader--chat">
+                  <img src="assets/hidden_Bunny_SVG.svg" class="agile-bunny-loader__img" alt="AI fetching..." />
+                </div>
+              </div>
+            </div>
+          `;
+      }
+
+      const aiText = card.aiText || card.text;
+      if (!aiText) return userHtml;
+
+      // Read-aloud toggle above answers to questions asked on the canvas
+      const speakBtn = (card.userText && voice.ttsSupported) ? `
+              <button class="agile-speak-toggle ${card.speak ? 'is-on' : ''}" data-speak-card="${card.id}"
+                title="${card.speak ? 'Stop reading aloud' : 'Read aloud'}" aria-pressed="${card.speak ? 'true' : 'false'}">
+                <span class="material-symbols-rounded">${card.speak ? 'volume_up' : 'volume_off'}</span>
+              </button>` : '';
+
+      return userHtml + `
+            <div class="agile-chat-msg agile-chat-msg--ai" style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start;">
+              ${speakBtn}
+              <div class="agile-chat-prompt-body${card.isStreaming ? ' is-streaming' : ''}" style="white-space: pre-wrap;">${escapeAgileHtml(aiText)}</div>
+              <div class="agile-chat-timestamp">${card.time || getFormattedISTTime()}</div>
+            </div>
+          `;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       VOICE: speech-to-text input (Chrome Web Speech API) and read-aloud
+       (speechSynthesis). Both run in the browser and use no AI tokens.
+       ═══════════════════════════════════════════════════════════════════════ */
+    const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const voice = {
+      sttSupported: !!SpeechRecognitionCtor,
+      ttsSupported: 'speechSynthesis' in window,
+      listening: false,
+      recognition: null,
+      finalText: '',
+      interimText: '',
+      stream: null,
+      audioCtx: null,
+      waveRaf: null,
+      speakingCardId: null
+    };
+
+    function updateSendMicButton() {
+      if (!sendBtn) return;
+      const icon = sendBtn.querySelector('.material-symbols-rounded');
+      const hasText = promptInput && promptInput.value.trim().length > 0;
+      let mode = 'send';
+      if (voice.listening) mode = 'stop';
+      else if (!hasText && voice.sttSupported) mode = 'mic';
+
+      sendBtn.dataset.mode = mode;
+      sendBtn.classList.toggle('is-mic', mode === 'mic');
+      sendBtn.classList.toggle('is-listening', mode === 'stop');
+      if (icon) icon.textContent = mode === 'stop' ? 'stop' : (mode === 'mic' ? 'mic' : 'send');
+      const label = mode === 'stop' ? 'Stop and send' : (mode === 'mic' ? 'Speak your question' : 'Send prompt');
+      sendBtn.title = label;
+      sendBtn.setAttribute('aria-label', label);
+    }
+
+    function ensureWaveCanvas() {
+      let wave = document.getElementById('agile-voice-wave');
+      if (!wave && promptInput) {
+        wave = document.createElement('canvas');
+        wave.id = 'agile-voice-wave';
+        wave.className = 'agile-voice-wave';
+        promptInput.insertAdjacentElement('afterend', wave);
+      }
+      return wave;
+    }
+
+    function drawWaveform(analyser, wave) {
+      // Scrolling level meter: one bar per ~70 ms, newest on the right.
+      // Loudness is smoothed (fast rise, slow fall) and quiet room noise is
+      // ignored, so the bars follow your voice calmly instead of flickering.
+      const ctx2 = wave.getContext('2d');
+      const data = new Float32Array(analyser.fftSize);
+      const dpr = window.devicePixelRatio || 1;
+      const BAR_W = 3, GAP = 3, SAMPLE_MS = 70;
+      const NOISE_GATE = 0.012;
+      const levels = [];
+      let smooth = 0;
+      let lastSample = 0;
+
+      const readLevel = () => {
+        analyser.getFloatTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+        const rms = Math.sqrt(sum / data.length);
+        if (rms < NOISE_GATE) return 0;
+        const db = 20 * Math.log10(rms);
+        return Math.min(1, Math.max(0, (db + 40) / 32));
+      };
+
+      const draw = (now) => {
+        if (!voice.listening) return;
+        const w = wave.clientWidth, h = wave.clientHeight;
+        if (wave.width !== Math.round(w * dpr)) { wave.width = Math.round(w * dpr); wave.height = Math.round(h * dpr); }
+
+        if (!lastSample || now - lastSample >= SAMPLE_MS) {
+          const target = readLevel();
+          smooth = target > smooth ? smooth + (target - smooth) * 0.6 : smooth + (target - smooth) * 0.25;
+          levels.push(smooth);
+          const maxBars = Math.ceil(w / (BAR_W + GAP)) + 1;
+          if (levels.length > maxBars) levels.splice(0, levels.length - maxBars);
+          lastSample = now;
+        }
+
+        ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx2.clearRect(0, 0, w, h);
+        ctx2.fillStyle = '#56D364';
+        for (let i = 0; i < levels.length; i++) {
+          const x = w - (levels.length - i) * (BAR_W + GAP);
+          const barH = Math.max(2, levels[i] * h);
+          const y = (h - barH) / 2;
+          if (ctx2.roundRect) {
+            ctx2.beginPath();
+            ctx2.roundRect(x, y, BAR_W, barH, BAR_W / 2);
+            ctx2.fill();
+          } else {
+            ctx2.fillRect(x, y, BAR_W, barH);
+          }
+        }
+        voice.waveRaf = requestAnimationFrame(draw);
+      };
+      voice.waveRaf = requestAnimationFrame(draw);
+    }
+
+    async function startListening() {
+      if (!voice.sttSupported || voice.listening) return;
+      stopAllSpeech();
+
+      const recognition = new SpeechRecognitionCtor();
+      recognition.lang = navigator.language || 'en-US';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      voice.finalText = '';
+      voice.interimText = '';
+
+      recognition.onresult = (event) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const r = event.results[i];
+          if (r.isFinal) voice.finalText += r[0].transcript + ' ';
+          else interim += r[0].transcript;
+        }
+        voice.interimText = interim;
+      };
+      recognition.onerror = (event) => {
+        console.warn('Speech recognition error:', event.error);
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          stopListening(false);
+          if (promptInput) promptInput.placeholder = 'Microphone blocked. Allow it in Chrome to speak.';
+        }
+      };
+      // Chrome ends recognition after a long pause; restart while the user is still in voice mode
+      recognition.onend = () => {
+        if (voice.listening && voice.recognition === recognition) {
+          try { recognition.start(); } catch (e) {}
+        }
+      };
+
+      voice.recognition = recognition;
+      voice.listening = true;
+      barEl && barEl.classList.add('is-voice-listening');
+      updateSendMicButton();
+
+      try {
+        recognition.start();
+      } catch (e) {
+        console.warn('Could not start speech recognition:', e);
+      }
+
+      // Waveform from the microphone level (purely visual)
+      const wave = ensureWaveCanvas();
+      try {
+        voice.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (!voice.listening) { voice.stream.getTracks().forEach(t => t.stop()); return; }
+        voice.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = voice.audioCtx.createMediaStreamSource(voice.stream);
+        const analyser = voice.audioCtx.createAnalyser();
+        analyser.fftSize = 1024;
+        source.connect(analyser);
+        if (wave) drawWaveform(analyser, wave);
+      } catch (e) {
+        console.warn('Waveform unavailable:', e);
+      }
+    }
+
+    function stopListening(sendAfter) {
+      if (!voice.listening) return;
+      voice.listening = false;
+      const recognition = voice.recognition;
+
+      const finish = () => {
+        if (voice.recognition !== recognition) return;
+        voice.recognition = null;
+        if (voice.waveRaf) cancelAnimationFrame(voice.waveRaf);
+        if (voice.stream) voice.stream.getTracks().forEach(t => t.stop());
+        if (voice.audioCtx) voice.audioCtx.close().catch(() => {});
+        voice.stream = null;
+        voice.audioCtx = null;
+        barEl && barEl.classList.remove('is-voice-listening');
+
+        const transcript = (voice.finalText + ' ' + voice.interimText).replace(/\s+/g, ' ').trim();
+        if (promptInput) promptInput.value = transcript;
+        updateSendMicButton();
+
+        if (!sendAfter) return;
+        if (!transcript) {
+          if (promptInput) {
+            const original = 'Have any question? Ask AI';
+            promptInput.placeholder = "Didn't catch that. Tap the mic and try again.";
+            setTimeout(() => { promptInput.placeholder = original; }, 2500);
+          }
+          return;
+        }
+        // Let the user see their words for a moment, then send
+        setTimeout(() => handlePromptSubmission({ fromVoice: true }), 350);
+      };
+
+      if (recognition) {
+        // Wait for the last results to arrive before reading the transcript
+        recognition.onend = finish;
+        try { recognition.stop(); } catch (e) { finish(); }
+        setTimeout(finish, 1200);
+      } else {
+        finish();
+      }
+    }
+
+    function onSendMicClick() {
+      const mode = sendBtn ? sendBtn.dataset.mode : 'send';
+      if (mode === 'stop') stopListening(true);
+      else if (mode === 'mic') startListening();
+      else handlePromptSubmission();
+    }
+
+    /* ── Read-aloud: speaks finished sentences while the answer is still streaming ── */
+    function textForSpeech(text) {
+      return text.replace(/^\s*[-•*]\s+/gm, '').replace(/[`#*_]/g, '');
+    }
+
+    function speakNewSentences(card, isDone) {
+      if (!voice.ttsSupported || !card.speak) return;
+      const text = card.aiText || '';
+      card.spokenIdx = card.spokenIdx || 0;
+      const unspoken = text.slice(card.spokenIdx);
+
+      // Speak up to the last sentence end (or line break); the rest waits for more text
+      let cut = -1;
+      const re = /[.!?](\s|$)|\n/g;
+      let m;
+      while ((m = re.exec(unspoken)) !== null) cut = m.index + m[0].length;
+      if (isDone) cut = unspoken.length;
+      if (cut <= 0) return;
+
+      const chunk = textForSpeech(unspoken.slice(0, cut)).trim();
+      card.spokenIdx += cut;
+      if (!chunk) return;
+
+      const utter = new SpeechSynthesisUtterance(chunk);
+      utter.lang = navigator.language || 'en-US';
+      utter.rate = 1.05;
+      window.speechSynthesis.speak(utter);
+      voice.speakingCardId = card.id;
+    }
+
+    function stopAllSpeech() {
+      if (voice.ttsSupported) window.speechSynthesis.cancel();
+      engineState.chatCards.forEach(c => { if (c.speak) c.speak = false; });
+      voice.speakingCardId = null;
+    }
+
+    function toggleCardSpeech(cardId) {
+      const card = engineState.chatCards.find(c => String(c.id) === String(cardId));
+      if (!card) return;
+      if (card.speak) {
+        stopAllSpeech();
+      } else {
+        stopAllSpeech();
+        card.speak = true;
+        // Read from the start of this answer; if it is still streaming, speech keeps up as text arrives
+        card.spokenIdx = 0;
+        speakNewSentences(card, !card.isStreaming);
+      }
+      renderCanvas();
+    }
+
+    if (overlayEl) {
+      overlayEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-speak-card]');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        toggleCardSpeech(btn.getAttribute('data-speak-card'));
+      });
+      overlayEl.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('[data-speak-card]')) e.stopPropagation();
+      });
     }
 
     /* ── Turn the structured /api/chat response into readable plain text ──
@@ -2974,7 +3507,11 @@
     }
 
     if (sendBtn) {
-      sendBtn.addEventListener('click', handlePromptSubmission);
+      sendBtn.addEventListener('click', onSendMicClick);
+      updateSendMicButton();
+    }
+    if (promptInput) {
+      promptInput.addEventListener('input', updateSendMicButton);
     }
 
     if (promptInput) {
