@@ -307,6 +307,12 @@ class RecordingTimer {
    * Audio Capture Initialization
    */
   async startAudioCapture() {
+    // The person turned voice recording off in their account: the timer still runs, the mic stays off
+    const profile = window.RabbitAuth && window.RabbitAuth.profile;
+    if (profile && profile.recordingConsent === false) {
+      console.info('[Recorder] Voice recording is turned off in account settings.');
+      return;
+    }
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('MediaDevices not supported');

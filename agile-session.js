@@ -7,7 +7,10 @@
 
 (function () {
   const API_BASE = '/api/agile-sessions';
-  const STORAGE_KEY = 'AGILE_SAVED_SESSIONS';
+  // Per-person browser storage (see auth-boot.js), so people sharing a computer never see each other's sessions
+  const userKey = (base) => (window.rabbitKey ? window.rabbitKey(base) : base);
+  const STORAGE_KEY = userKey('AGILE_SAVED_SESSIONS');
+  const TOTAL_KEY = userKey('AGILE_TOTAL_SESSIONS_COMPLETED');
 
   // Helper: DOM Element Selector by ID
   const getEl = (id) => document.getElementById(id);
@@ -22,130 +25,6 @@
     return `${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
   }
 
-  // Default Fallback Mock Past Sessions
-  const defaultPastSessions = [
-    {
-      id: 'w13-past',
-      title: 'W13 - beauty and care',
-      prompt: 'Design an e-commerce subscription box and personalization flow for beauty and skincare routines.',
-      difficulty: 'Normal',
-      category: 'Beauty & Personal Care',
-      duration: '45 min',
-      recordedTime: '- 44:12',
-      dateLabel: 'today',
-      timestamp: Date.now(),
-      notes: [
-        'Say the words clearly',
-        'Take pauses over fillers works',
-        'Finish first sentence then go to another'
-      ],
-      chatCards: [
-        {
-          id: 1,
-          x: 100,
-          y: 100,
-          aiText: 'Design an e-commerce subscription box and personalization flow for beauty and skincare routines.',
-          time: '11:00 AM'
-        }
-      ],
-      chatHistory: [
-        {
-          type: 'system',
-          label: 'Here is your prompt...',
-          text: 'Design an e-commerce subscription box and personalization flow for beauty and skincare routines.',
-          time: '11:00 AM'
-        }
-      ]
-    },
-    {
-      id: 'w12-past',
-      title: 'W12 - SaaS',
-      prompt: 'Design a developer dashboard for real-time error logging and incident response management.',
-      difficulty: 'Difficult',
-      category: 'SaaS',
-      duration: '60 min',
-      recordedTime: '- 58:40',
-      dateLabel: 'Aug 1',
-      timestamp: Date.now() - 86400000 * 37,
-      notes: ['Focus on key user journeys', 'Keep visual hierarchy clean'],
-      chatCards: [
-        {
-          id: 2,
-          x: 100,
-          y: 100,
-          aiText: 'Design a developer dashboard for real-time error logging and incident response management.',
-          time: '02:30 PM'
-        }
-      ],
-      chatHistory: []
-    },
-    {
-      id: 'w11-past',
-      title: 'W11 - EdTech',
-      prompt: 'Design an interactive mobile learning interface for high school STEM students.',
-      difficulty: 'Difficult',
-      category: 'EdTech',
-      duration: '45 min',
-      recordedTime: '- 42:15',
-      dateLabel: 'Jul 29',
-      timestamp: Date.now() - 86400000 * 40,
-      notes: ['Pace presentation evenly'],
-      chatCards: [
-        {
-          id: 3,
-          x: 100,
-          y: 100,
-          aiText: 'Design an interactive mobile learning interface for high school STEM students.',
-          time: '10:15 AM'
-        }
-      ],
-      chatHistory: []
-    },
-    {
-      id: 'w10-past',
-      title: 'W10 - Sci-Fi',
-      prompt: 'Design a holographic heads-up display interface for space station maintenance engineers.',
-      difficulty: 'Normal',
-      category: 'Random',
-      duration: '30 min',
-      recordedTime: '- 29:10',
-      dateLabel: 'July 5',
-      timestamp: Date.now() - 86400000 * 64,
-      notes: ['Clear typography'],
-      chatCards: [
-        {
-          id: 4,
-          x: 100,
-          y: 100,
-          aiText: 'Design a holographic heads-up display interface for space station maintenance engineers.',
-          time: '04:20 PM'
-        }
-      ],
-      chatHistory: []
-    },
-    {
-      id: 'w9-past',
-      title: 'W9 - Fintech',
-      prompt: 'Design a cross-border micro-investment mobile application for emerging markets.',
-      difficulty: 'Normal',
-      category: 'FinTech',
-      duration: '30 min',
-      recordedTime: '- 28:45',
-      dateLabel: 'July 5',
-      timestamp: Date.now() - 86400000 * 64,
-      notes: [],
-      chatCards: [
-        {
-          id: 5,
-          x: 100,
-          y: 100,
-          aiText: 'Design a cross-border micro-investment mobile application for emerging markets.',
-          time: '09:45 AM'
-        }
-      ],
-      chatHistory: []
-    }
-  ];
 
   // Global Session State
   const sessionState = {
@@ -164,7 +43,7 @@
       'Take pauses over fillers works',
       'Finish first sentence then go to another'
     ],
-    pastSessions: defaultPastSessions
+    pastSessions: []
   };
 
   // Pre-prompting Questions Data
@@ -233,7 +112,7 @@
           sessionState.pastSessions = parsed;
         }
       }
-      const storedTotal = localStorage.getItem('AGILE_TOTAL_SESSIONS_COMPLETED');
+      const storedTotal = localStorage.getItem(TOTAL_KEY);
       if (storedTotal !== null && storedTotal !== undefined) {
         sessionState.totalSessionsCompleted = parseInt(storedTotal, 10);
       } else {
@@ -295,7 +174,7 @@
 
     const currentLen = sessionState.pastSessions.length;
     sessionState.totalSessionsCompleted = Math.max((sessionState.totalSessionsCompleted || 0) + (existingIndex >= 0 ? 0 : 1), currentLen);
-    localStorage.setItem('AGILE_TOTAL_SESSIONS_COMPLETED', sessionState.totalSessionsCompleted.toString());
+    localStorage.setItem(TOTAL_KEY, sessionState.totalSessionsCompleted.toString());
 
     persistSessionsToLocalStorage();
     renderHomepageData();
@@ -382,7 +261,7 @@
       sessionState.totalSessionsCompleted = currentLen;
     }
     sessionState.totalSessionsCompleted = Math.max(sessionState.totalSessionsCompleted, currentLen);
-    localStorage.setItem('AGILE_TOTAL_SESSIONS_COMPLETED', sessionState.totalSessionsCompleted.toString());
+    localStorage.setItem(TOTAL_KEY, sessionState.totalSessionsCompleted.toString());
 
     const totalCount = sessionState.totalSessionsCompleted;
     if (totalEl) totalEl.textContent = totalCount;
@@ -433,14 +312,19 @@
       streakMatrix.innerHTML = matrixHTML;
     }
 
-    // 3. Lowest Time Taken per category
+    // 3. Lowest time taken for each session length (from this person's own saved sessions)
     const lowestEl = getEl('stat-lowest-times');
     if (lowestEl) {
-      lowestEl.innerHTML = `
-        <span style="font-size: 24px; font-weight: 600; color: #fff;">${totalCount}</span> <span style="font-size: 12px; color: rgba(255,255,255,0.6);">/30 mins</span> &nbsp;
-        <span style="font-size: 24px; font-weight: 600; color: #fff;">${totalCount}</span> <span style="font-size: 12px; color: rgba(255,255,255,0.6);">/45 mins</span> &nbsp;
-        <span style="font-size: 24px; font-weight: 600; color: #fff;">${totalCount}</span> <span style="font-size: 12px; color: rgba(255,255,255,0.6);">/60 mins</span>
-      `;
+      const best = { '30 min': null, '45 min': null, '60 min': null };
+      (sessionState.pastSessions || []).forEach(s => {
+        const secs = typeof s.timeTakenSec === 'number' && s.timeTakenSec > 0 ? s.timeTakenSec
+          : (typeof s.recordingDuration === 'number' && s.recordingDuration > 0 ? s.recordingDuration : null);
+        if (secs && s.duration in best && (best[s.duration] === null || secs < best[s.duration])) best[s.duration] = secs;
+      });
+      const fmt = secs => (secs === null ? '\u2013' : secs < 60 ? `${Math.round(secs)}s` : `${Math.round(secs / 60)}m`);
+      lowestEl.innerHTML = ['30', '45', '60'].map(m => `
+        <span style="font-size: 24px; font-weight: 600; color: #fff;">${fmt(best[`${m} min`])}</span> <span style="font-size: 12px; color: rgba(255,255,255,0.6);">/${m} mins</span>`
+      ).join(' &nbsp;');
     }
   }
 
@@ -450,8 +334,10 @@
 
     if (!sessionState.pastSessions || sessionState.pastSessions.length === 0) {
       listContainer.innerHTML = `
-        <div style="padding: 24px; text-align: center; color: rgba(255, 255, 255, 0.4); font-size: 14px;">
-          No past sessions available.
+        <div class="rabbit-empty">
+          <img src="assets/hidden_Bunny_SVG.svg" alt="" class="rabbit-empty__bunny" />
+          <div class="rabbit-empty__title">No sessions yet</div>
+          <div class="rabbit-empty__text">Start your first challenge above. Every session you save shows up here.</div>
         </div>
       `;
       return;
@@ -545,7 +431,7 @@
     // 1. Preserve total sessions completed metric in state and storage
     const currentLen = sessionState.pastSessions ? sessionState.pastSessions.length : 0;
     sessionState.totalSessionsCompleted = Math.max(sessionState.totalSessionsCompleted || 0, currentLen);
-    localStorage.setItem('AGILE_TOTAL_SESSIONS_COMPLETED', sessionState.totalSessionsCompleted.toString());
+    localStorage.setItem(TOTAL_KEY, sessionState.totalSessionsCompleted.toString());
 
     // 2. Remove target session from memory state
     sessionState.pastSessions = sessionState.pastSessions.filter(s => (s.id !== sessionId && s._id !== sessionId));
@@ -1385,6 +1271,9 @@
         category: sessionState.answers.category || 'Random',
         duration: sessionState.answers.duration || 'No',
         recordedTime: window.AgileRecorderInstance ? window.AgileRecorderInstance.dom.timerDisplay.textContent : '- 00:00',
+        timeTakenSec: sessionState.mode === 'history'
+          ? (sessionState.pastSessions.find(x => x.id === sessionState.activeSessionId) || {}).timeTakenSec
+          : (recorder ? Math.round(recorder.elapsedSecondsFloat || 0) : undefined),
         dateLabel: 'today',
         timestamp: Date.now(),
         notes: currentNotes,

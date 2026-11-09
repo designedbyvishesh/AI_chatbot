@@ -22,6 +22,8 @@
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="recording-timer.css" />
   <link rel="stylesheet" href="agile.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <script src="auth-boot.js"></script>
 </head>
 
 <body>
@@ -81,7 +83,7 @@
         <aside class="agile-home-left-panel">
           <!-- Header Greeting -->
           <div class="agile-home-greeting">
-            <span>👋</span> <span>Hi Rahul</span>
+            <span>👋</span> <span data-rabbit-greeting>Hi there</span>
           </div>
           <h2 class="agile-home-title">See your growth...</h2>
 
@@ -415,6 +417,7 @@
     <!-- Include RecordingTimer JS Script & Agile Session Manager -->
     <script src="recording-timer.js"></script>
     <script src="agile-session.js"></script>
+    <script type="module" src="auth-guard.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', () => {
         initClock();

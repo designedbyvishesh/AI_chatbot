@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Sign in to Rabbit, the design practice coach." />
+  <title>Sign in · Rabbit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Text&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="tokens.css" />
+  <link rel="stylesheet" href="agile.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <script src="auth-boot.js"></script>
+  <script>document.documentElement.classList.remove('rabbit-auth-pending');</script>
+</head>
+
+<body class="rabbit-auth-page">
+  <div class="rabbit-auth-loader" id="auth-loader">
+    <img src="assets/hidden_Bunny_SVG.svg" alt="Loading" />
+  </div>
+
+  <div class="rabbit-auth">
+    <div class="agile-wallpaper-bg" aria-hidden="true"></div>
+
+    <!-- ─── Left: brand and pitch ─── -->
+    <aside class="rabbit-auth__brand">
+      <div class="rabbit-auth__logo">
+        <img src="assets/Logo_Black_BG.svg" alt="" />
+        <span>Rabbit</span>
+      </div>
+
+      <div class="rabbit-auth__pitch">
+        <h1 class="rabbit-auth__headline">Practice design decisions, one challenge at a time.</h1>
+        <ul class="rabbit-auth__benefits">
+          <li><span class="material-symbols-outlined">bolt</span>Timed whiteboard challenges written for your level and industry.</li>
+          <li><span class="material-symbols-outlined">mic</span>Ask Rabbit out loud while you sketch, and get short, focused answers.</li>
+          <li><span class="material-symbols-outlined">trending_up</span>Replay every session and watch your speed and streak grow.</li>
+        </ul>
+      </div>
+
+      <div class="rabbit-auth__foot">Made for designers getting industry-ready.</div>
+    </aside>
+
+    <!-- ─── Right: forms ─── -->
+    <main class="rabbit-auth__frame">
+
+      <!-- Sign in / Create account -->
+      <section class="rabbit-auth__card" id="view-auth" hidden>
+        <img src="assets/Bunny_Blink_animation.svg" alt="" class="rabbit-auth__bunny" />
+        <h2 class="rabbit-auth__title" id="auth-title">Welcome back</h2>
+        <p class="rabbit-auth__sub" id="auth-sub">Sign in to pick up where you left off.</p>
+
+        <div class="rabbit-segment" id="auth-segment" data-active="signin" role="tablist">
+          <div class="rabbit-segment__slider"></div>
+          <button role="tab" aria-selected="true" data-mode="signin">Sign in</button>
+          <button role="tab" aria-selected="false" data-mode="signup">Create account</button>
+        </div>
+
+        <button class="rabbit-btn rabbit-btn--secondary rabbit-btn--block" id="google-btn" type="button">
+          <svg class="rabbit-google-icon" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+            <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/>
+          </svg>
+          Continue with Google
+        </button>
+
+        <div class="rabbit-divider">or</div>
+
+        <form class="rabbit-form" id="email-form" novalidate>
+          <label class="rabbit-field" data-only="signup">
+            <span class="rabbit-field__label">Your name</span>
+            <input class="rabbit-input" id="name-input" type="text" autocomplete="name" placeholder="First and last name" maxlength="60" />
+          </label>
+          <label class="rabbit-field">
+            <span class="rabbit-field__label">Email</span>
+            <input class="rabbit-input" id="email-input" type="email" autocomplete="email" placeholder="you@example.com" required />
+          </label>
+          <div class="rabbit-field">
+            <div class="rabbit-field__row">
+              <label class="rabbit-field__label" for="password-input">Password</label>
+              <button class="rabbit-link" type="button" id="forgot-btn" data-only="signin">Forgot password?</button>
+            </div>
+            <div class="rabbit-password">
+              <input class="rabbit-input" id="password-input" type="password" autocomplete="current-password" placeholder="At least 8 characters" required minlength="8" />
+              <button class="rabbit-password__toggle" type="button" id="password-toggle" aria-label="Show password">
+                <span class="material-symbols-outlined">visibility</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="rabbit-alert rabbit-alert--error" id="auth-error" role="alert" hidden>
+            <span class="material-symbols-outlined">error</span><span id="auth-error-text"></span>
+          </div>
+
+          <button class="rabbit-btn rabbit-btn--primary rabbit-btn--block" id="email-submit" type="submit">Sign in</button>
+        </form>
+
+        <p class="rabbit-auth__switch-line" id="switch-line">
+          New to Rabbit? <button class="rabbit-link rabbit-link--green" type="button" data-switch="signup">Create an account</button>
+        </p>
+      </section>
+
+      <!-- Forgot password -->
+      <section class="rabbit-auth__card" id="view-reset" hidden>
+        <img src="assets/Bunny_Blink_animation.svg" alt="" class="rabbit-auth__bunny" />
+        <h2 class="rabbit-auth__title">Reset your password</h2>
+        <p class="rabbit-auth__sub">We'll email you a link to choose a new one.</p>
+        <form class="rabbit-form" id="reset-form" novalidate>
+          <label class="rabbit-field">
+            <span class="rabbit-field__label">Email</span>
+            <input class="rabbit-input" id="reset-email" type="email" autocomplete="email" placeholder="you@example.com" required />
+          </label>
+          <div class="rabbit-alert rabbit-alert--error" id="reset-error" role="alert" hidden>
+            <span class="material-symbols-outlined">error</span><span id="reset-error-text"></span>
+          </div>
+          <div class="rabbit-alert rabbit-alert--success" id="reset-done" role="status" hidden>
+            <span class="material-symbols-outlined">mark_email_read</span><span>Check your inbox. If an account exists for that email, the reset link is on its way.</span>
+          </div>
+          <button class="rabbit-btn rabbit-btn--primary rabbit-btn--block" id="reset-submit" type="submit">Send reset link</button>
+        </form>
+        <p class="rabbit-auth__switch-line">
+          <button class="rabbit-link" type="button" id="reset-back">Back to sign in</button>
+        </p>
+      </section>
+
+      <!-- Welcome (first time only) -->
+      <section class="rabbit-auth__card rabbit-auth__card--wide" id="view-welcome" hidden>
+        <img src="assets/Bunny_Blink_animation.svg" alt="" class="rabbit-auth__bunny" />
+        <h2 class="rabbit-auth__title">Nice to meet you</h2>
+        <p class="rabbit-auth__sub">A few quick details so Rabbit can pitch challenges at the right level.</p>
+
+        <form class="rabbit-form" id="welcome-form" novalidate>
+          <label class="rabbit-field">
+            <span class="rabbit-field__label">What should Rabbit call you?</span>
+            <input class="rabbit-input" id="welcome-name" type="text" autocomplete="name" maxlength="60" required />
+          </label>
+
+          <div class="rabbit-field">
+            <span class="rabbit-field__label" id="role-label">Which best describes you?</span>
+            <div class="rabbit-pills" role="group" aria-labelledby="role-label" id="role-pills">
+              <button type="button" class="rabbit-pill" data-role="student" aria-pressed="false">Design student</button>
+              <button type="button" class="rabbit-pill" data-role="junior-designer" aria-pressed="false">Junior designer</button>
+              <button type="button" class="rabbit-pill" data-role="designer" aria-pressed="false">Designer</button>
+              <button type="button" class="rabbit-pill" data-role="educator" aria-pressed="false">Educator</button>
+              <button type="button" class="rabbit-pill" data-role="other" aria-pressed="false">Other</button>
+            </div>
+          </div>
+
+          <label class="rabbit-field">
+            <span class="rabbit-field__label">College or company <span class="rabbit-field__hint">(optional)</span></span>
+            <input class="rabbit-input" id="welcome-college" type="text" maxlength="100" placeholder="e.g. NID Ahmedabad" />
+          </label>
+
+          <label class="rabbit-check">
+            <input type="checkbox" id="welcome-age" />
+            <span>I'm 18 or older.<small>Rabbit is for adults for now.</small></span>
+          </label>
+          <label class="rabbit-check">
+            <input type="checkbox" id="welcome-terms" />
+            <span>I agree to Rabbit's terms and privacy policy.</span>
+          </label>
+          <label class="rabbit-check">
+            <input type="checkbox" id="welcome-recording" checked />
+            <span>Rabbit may record my voice during sessions so I can replay them.<small>Optional. You can change this any time in your account.</small></span>
+          </label>
+
+          <div class="rabbit-alert rabbit-alert--error" id="welcome-error" role="alert" hidden>
+            <span class="material-symbols-outlined">error</span><span id="welcome-error-text"></span>
+          </div>
+
+          <button class="rabbit-btn rabbit-btn--primary rabbit-btn--block" id="welcome-submit" type="submit">
+            Start practising <span class="material-symbols-outlined">arrow_forward</span>
+          </button>
+        </form>
+        <p class="rabbit-auth__switch-line" id="welcome-signout-line">
+          Not you? <button class="rabbit-link" type="button" id="welcome-signout">Sign out</button>
+        </p>
+      </section>
+
+      <!-- Sign-in not set up yet (local development only) -->
+      <section class="rabbit-auth__card" id="view-local" hidden>
+        <img src="assets/Bunny_Blink_animation.svg" alt="" class="rabbit-auth__bunny" />
+        <h2 class="rabbit-auth__title">Sign-in isn't set up yet</h2>
+        <p class="rabbit-auth__sub">This copy of Rabbit has no Firebase settings, so it runs in local mode with one built-in account. Add the Firebase settings to <code>.env</code> to turn on sign-in.</p>
+        <a class="rabbit-btn rabbit-btn--primary rabbit-btn--block" href="agile.html">Continue in local mode</a>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="login.js"></script>
+</body>
+
+</html>

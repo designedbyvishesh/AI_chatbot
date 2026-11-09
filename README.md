@@ -105,6 +105,26 @@ GROQ_API_KEY=your_groq_api_key
 ```
 *(Note: If MongoDB or Groq keys are omitted, the application automatically uses built-in LocalStorage fallback and heuristic AI responses).*
 
+See `.env.example` for every setting.
+
+#### Sign-in (Firebase Authentication)
+Without Firebase settings the app runs in **local mode**: one built-in user, no login page. To turn on sign-in:
+
+1. Create a project at [console.firebase.google.com](https://console.firebase.google.com).
+2. **Authentication > Sign-in method**: enable **Google** and **Email/Password**.
+3. **Authentication > Settings > Authorized domains**: make sure `localhost` (and later your live domain) is listed.
+4. **Project settings > General > Your apps**: add a **Web app** and copy its config into `.env`:
+   ```env
+   FIREBASE_PROJECT_ID=your-project-id
+   FIREBASE_API_KEY=AIza...
+   FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+   FIREBASE_APP_ID=1:123...:web:abc...
+   ```
+   These are public web settings, not secrets. No service-account key is needed.
+5. Restart the server. Visiting the app now goes to `login.html`.
+
+Sessions saved before accounts existed can be imported from the banner that appears after signing in, or from the Account page. Sessions already in MongoDB without an owner can be given to one account with `node scripts/claim-orphan-data.js <firebase-uid>`.
+
 ### 4. Run the Application
 Start the server in development mode:
 ```bash
@@ -118,6 +138,7 @@ npm start
 ### 5. Access the Views
 * **AI Design Tutor & Quiz Hub**: Open [`http://localhost:3000`](http://localhost:3000)
 * **Agile Whiteboard & 2D Canvas**: Open [`http://localhost:3000/agile.html`](http://localhost:3000/agile.html)
+* **Sign in / Account**: [`/login.html`](http://localhost:3000/login.html) and [`/account.html`](http://localhost:3000/account.html)
 
 ---
 

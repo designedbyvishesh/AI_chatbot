@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Your Rabbit account: profile, privacy and data." />
+  <title>Account · Rabbit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Text&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="tokens.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="agile.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <script src="auth-boot.js"></script>
+</head>
+
+<body class="rabbit-account-page">
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="topbar__left">
+        <a class="topbar__logo" href="agile.html" title="Back to practice">
+          <img src="assets/Logo_Black_BG.svg" alt="Rabbit" class="topbar__logo-img" width="32" height="32" />
+        </a>
+        <a class="rabbit-btn rabbit-btn--ghost rabbit-btn--sm" href="agile.html">
+          <span class="material-symbols-outlined">arrow_back</span>Back to practice
+        </a>
+      </div>
+      <div class="topbar__right"></div>
+    </header>
+
+    <main class="agile-workspace">
+      <div class="agile-wallpaper-bg" aria-hidden="true"></div>
+
+      <div class="agile-homepage-container">
+        <!-- ─── Left: who you are ─── -->
+        <aside class="agile-home-left-panel">
+          <div class="rabbit-account-id">
+            <span class="rabbit-avatar rabbit-avatar--xl" id="acc-avatar" aria-hidden="true"></span>
+            <h1 class="agile-home-title" id="acc-name" style="margin: 0;">Your account</h1>
+            <span class="rabbit-account-email" id="acc-email"></span>
+            <span class="rabbit-plan-badge"><span class="material-symbols-outlined">eco</span><span id="acc-plan">Free plan</span></span>
+            <span class="rabbit-account-since" id="acc-since"></span>
+          </div>
+
+          <div class="rabbit-account-stats">
+            <div class="agile-stat-card">
+              <div class="agile-stat-val" id="acc-agile-count">0</div>
+              <div class="agile-stat-lbl">Agile sessions</div>
+            </div>
+            <div class="agile-stat-card">
+              <div class="agile-stat-val" id="acc-quiz-count">0</div>
+              <div class="agile-stat-lbl">Quiz chats</div>
+            </div>
+          </div>
+
+          <button class="rabbit-btn rabbit-btn--secondary rabbit-btn--block" id="acc-signout" hidden>
+            <span class="material-symbols-outlined">logout</span>Sign out
+          </button>
+        </aside>
+
+        <!-- ─── Right: settings ─── -->
+        <div class="agile-home-right-frame">
+          <div class="agile-home-right-content">
+
+            <section class="rabbit-section">
+              <h2 class="rabbit-section__title">Profile</h2>
+              <p class="rabbit-section__sub">Rabbit uses this to pitch challenges at the right level.</p>
+              <form class="rabbit-form" id="profile-form" novalidate>
+                <label class="rabbit-field">
+                  <span class="rabbit-field__label">Name</span>
+                  <input class="rabbit-input" id="pf-name" type="text" maxlength="60" autocomplete="name" required />
+                </label>
+                <div class="rabbit-field">
+                  <span class="rabbit-field__label" id="pf-role-label">Which best describes you?</span>
+                  <div class="rabbit-pills" role="group" aria-labelledby="pf-role-label" id="pf-roles">
+                    <button type="button" class="rabbit-pill" data-role="student" aria-pressed="false">Design student</button>
+                    <button type="button" class="rabbit-pill" data-role="junior-designer" aria-pressed="false">Junior designer</button>
+                    <button type="button" class="rabbit-pill" data-role="designer" aria-pressed="false">Designer</button>
+                    <button type="button" class="rabbit-pill" data-role="educator" aria-pressed="false">Educator</button>
+                    <button type="button" class="rabbit-pill" data-role="other" aria-pressed="false">Other</button>
+                  </div>
+                </div>
+                <label class="rabbit-field">
+                  <span class="rabbit-field__label">College or company <span class="rabbit-field__hint">(optional)</span></span>
+                  <input class="rabbit-input" id="pf-college" type="text" maxlength="100" />
+                </label>
+                <div class="rabbit-alert rabbit-alert--error" id="pf-error" role="alert" hidden>
+                  <span class="material-symbols-outlined">error</span><span id="pf-error-text"></span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 14px;">
+                  <button class="rabbit-btn rabbit-btn--primary" id="pf-save" type="submit">Save changes</button>
+                  <span class="rabbit-saved-note" id="pf-saved">Saved</span>
+                </div>
+              </form>
+            </section>
+
+            <section class="rabbit-section" id="sec-signin" hidden>
+              <h2 class="rabbit-section__title">Sign-in</h2>
+              <p class="rabbit-section__sub" id="signin-method"></p>
+              <div class="rabbit-row-card" id="verify-row" hidden>
+                <div class="rabbit-row-card__text">
+                  <span class="rabbit-row-card__title">Verify your email</span>
+                  <span class="rabbit-row-card__sub">We sent a link when you signed up. It confirms this email is yours.</span>
+                </div>
+                <button class="rabbit-btn rabbit-btn--secondary rabbit-btn--sm" id="verify-btn">Send again</button>
+              </div>
+              <div class="rabbit-row-card" id="password-row" hidden>
+                <div class="rabbit-row-card__text">
+                  <span class="rabbit-row-card__title">Password</span>
+                  <span class="rabbit-row-card__sub">We'll email you a link to choose a new password.</span>
+                </div>
+                <button class="rabbit-btn rabbit-btn--secondary rabbit-btn--sm" id="password-btn">Change password</button>
+              </div>
+            </section>
+
+            <section class="rabbit-section" id="sec-import" hidden>
+              <h2 class="rabbit-section__title">Sessions in this browser</h2>
+              <p class="rabbit-section__sub">These were saved before you had an account. Import them so they stay with you on any device.</p>
+              <div class="rabbit-row-card">
+                <div class="rabbit-row-card__text">
+                  <span class="rabbit-row-card__title" id="import-count"></span>
+                  <span class="rabbit-row-card__sub">They'll be removed from this browser's shared storage once imported.</span>
+                </div>
+                <button class="rabbit-btn rabbit-btn--primary rabbit-btn--sm" id="import-btn">Import</button>
+              </div>
+            </section>
+
+            <section class="rabbit-section">
+              <h2 class="rabbit-section__title">Privacy</h2>
+              <p class="rabbit-section__sub">You decide what Rabbit keeps.</p>
+              <div class="rabbit-row-card">
+                <div class="rabbit-row-card__text">
+                  <span class="rabbit-row-card__title">Voice recording</span>
+                  <span class="rabbit-row-card__sub">Record your voice during sessions so you can replay them.</span>
+                </div>
+                <label class="rabbit-switch" title="Voice recording">
+                  <input type="checkbox" id="recording-toggle" />
+                  <span></span>
+                </label>
+              </div>
+              <div class="rabbit-row-card rabbit-row-card--danger">
+                <div class="rabbit-row-card__text">
+                  <span class="rabbit-row-card__title">Delete account</span>
+                  <span class="rabbit-row-card__sub">Permanently deletes your profile, sessions, chats and recordings. This can't be undone.</span>
+                </div>
+                <button class="rabbit-btn rabbit-btn--danger rabbit-btn--sm" id="delete-btn">Delete account</button>
+              </div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Delete confirmation, same modal as deleting a session -->
+  <div class="agile-modal-overlay" id="delete-modal" style="display: none;">
+    <div class="agile-modal-card" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+      <div class="agile-modal-title" id="delete-modal-title">Delete your account?</div>
+      <div class="agile-modal-session-name">Everything you've saved in Rabbit will be gone for good. Type DELETE to confirm.</div>
+      <input class="rabbit-input rabbit-modal-input" id="delete-confirm-input" type="text" autocomplete="off" placeholder="DELETE" />
+      <div class="rabbit-alert rabbit-alert--error" id="delete-error" role="alert" hidden style="margin-bottom: 16px; width: 100%; box-sizing: border-box; text-align: left;">
+        <span class="material-symbols-outlined">error</span><span id="delete-error-text"></span>
+      </div>
+      <div class="agile-modal-actions">
+        <button class="agile-modal-btn agile-modal-btn--cancel" id="delete-cancel">Cancel</button>
+        <button class="agile-modal-btn agile-modal-btn--delete" id="delete-confirm" disabled>Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="account.js"></script>
+</body>
+
+</html>

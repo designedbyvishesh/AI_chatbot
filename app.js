@@ -8,7 +8,9 @@ let processingIntervals = [];
 let currentQuizIndex = 0;
 let isQuestioningMode = true;
 let activeSessionId = null;
-let allSessions = JSON.parse(localStorage.getItem('design_chat_sessions') || '[]');
+// Per-person browser storage (see auth-boot.js)
+const CHAT_KEY = window.rabbitKey ? window.rabbitKey('design_chat_sessions') : 'design_chat_sessions';
+let allSessions = JSON.parse(localStorage.getItem(CHAT_KEY) || '[]');
 
 // Multi-turn conversation history
 let conversationHistory = [];
@@ -38,17 +40,56 @@ document.addEventListener('DOMContentLoaded', () => {
   initQuizStreakMatrix();
 });
 
-/* ─── Streak Matrix Dots ─── */
+/* ─── Quiz stats from this person's own chats ─── */
 function initQuizStreakMatrix() {
+  const sessions = Array.isArray(allSessions) ? allSessions : [];
+  const dayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const activeDays = new Set();
+  sessions.forEach((s) => {
+    const t = s.timestamp ? new Date(s.timestamp) : null;
+    if (t && !isNaN(t)) activeDays.add(dayKey(t));
+  });
+
+  const totalEl = document.getElementById('stat-total-sessions');
+  if (totalEl) totalEl.textContent = sessions.length;
+
+  const weekEl = document.getElementById('stat-lowest-times');
+  if (weekEl) {
+    const weekAgo = Date.now() - 7 * 86400000;
+    const thisWeek = sessions.filter((s) => s.timestamp && new Date(s.timestamp).getTime() >= weekAgo).length;
+    weekEl.innerHTML = `<span style="font-size: 20px; font-weight: 600; color: #fff;">${thisWeek}</span> <span style="font-size: 12px; color: rgba(255,255,255,0.6);">chat${thisWeek === 1 ? '' : 's'} in the last 7 days</span>`;
+  }
+
+  // Longest run of consecutive active days
+  const sortedDays = Array.from(activeDays).sort();
+  let longest = 0, run = 0, prev = null;
+  sortedDays.forEach((k) => {
+    const d = new Date(k + 'T00:00:00');
+    run = prev && (d - prev) === 86400000 ? run + 1 : 1;
+    longest = Math.max(longest, run);
+    prev = d;
+  });
+  const longestEl = document.getElementById('stat-longest-streak');
+  if (longestEl) longestEl.textContent = `Longest - ${longest} day${longest === 1 ? '' : 's'}`;
+
+  const monthsEl = document.getElementById('agile-streak-months');
+  if (monthsEl) {
+    const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const m = new Date().getMonth();
+    monthsEl.innerHTML = [3, 2, 1, 0].map((back) => `<span>${names[(m - back + 12) % 12]}</span>`).join('');
+  }
+
   const streakMatrix = document.getElementById('agile-streak-matrix');
   if (!streakMatrix) return;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   let matrixHTML = '';
   for (let col = 0; col < 16; col++) {
     matrixHTML += `<div class="agile-streak-col">`;
     for (let row = 0; row < 4; row++) {
-      const idx = col * 4 + row;
-      const isActive = idx % 5 === 0 || idx % 7 === 0 || idx > 52;
-      matrixHTML += `<div class="agile-streak-block ${isActive ? 'agile-streak-block--active' : ''}"></div>`;
+      const day = new Date(today.getTime() - (63 - (col * 4 + row)) * 86400000);
+      const key = dayKey(day);
+      matrixHTML += `<div class="agile-streak-block ${activeDays.has(key) ? 'agile-streak-block--active' : ''}" title="${key}"></div>`;
     }
     matrixHTML += `</div>`;
   }
@@ -99,12 +140,13 @@ async function loadSavedSessions() {
       const mongoIds = new Set(data.sessions.map(s => s.id || s._id));
       const filteredLocal = allSessions.filter(s => !mongoIds.has(s.id));
       allSessions = [...data.sessions, ...filteredLocal];
-      localStorage.setItem('design_chat_sessions', JSON.stringify(allSessions));
+      localStorage.setItem(CHAT_KEY, JSON.stringify(allSessions));
     }
   } catch (e) {
     // Use localStorage
   }
   renderSessionList();
+  initQuizStreakMatrix();
 }
 
 /* ─── Render Live Chat History in Sidebar ─── */
@@ -171,7 +213,7 @@ function openSession(session) {
 window.deleteSession = function(e, sessionId) {
   e.stopPropagation();
   allSessions = allSessions.filter(s => s.id !== sessionId);
-  localStorage.setItem('design_chat_sessions', JSON.stringify(allSessions));
+  localStorage.setItem(CHAT_KEY, JSON.stringify(allSessions));
 
   // Also delete from MongoDB
   fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' }).catch(() => {});
@@ -352,7 +394,7 @@ function sendPrompt(promptText, createNewSession = true) {
     // Cap at 50 sessions to prevent unbounded growth
     if (allSessions.length > 50) allSessions = allSessions.slice(0, 50);
 
-    localStorage.setItem('design_chat_sessions', JSON.stringify(allSessions));
+    localStorage.setItem(CHAT_KEY, JSON.stringify(allSessions));
     renderSessionList();
 
     // Save to MongoDB Atlas
