@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="tokens.css" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="recording-timer.css" />
-  <link rel="stylesheet" href="agile.css" />
+  <link rel="stylesheet" href="agile.css?v=4" />
   <link rel="stylesheet" href="auth.css" />
   <script src="auth-boot.js"></script>
 </head>
@@ -414,10 +414,22 @@
       </div>
     </div>
 
+    <!-- Leave Current Session Confirmation Modal (current session only) -->
+    <div class="agile-modal-overlay" id="agile-leave-modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="leave-modal-title">
+      <div class="agile-modal-card">
+        <div class="agile-modal-title" id="leave-modal-title">Are you sure you want to leave?</div>
+        <div class="agile-modal-subtext">Your session will stop, and anything you haven't saved will be lost.</div>
+        <div class="agile-modal-actions">
+          <button class="agile-modal-btn agile-modal-btn--cancel" id="leave-modal-cancel-btn">Cancel</button>
+          <button class="agile-modal-btn agile-modal-btn--delete" id="leave-modal-confirm-btn">Yes</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Include RecordingTimer JS Script & Agile Session Manager -->
     <!-- ?v= makes browsers fetch the new version after an update instead of a cached copy -->
     <script src="recording-timer.js?v=3"></script>
-    <script src="agile-session.js?v=3"></script>
+    <script src="agile-session.js?v=4"></script>
     <script type="module" src="auth-guard.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', () => {

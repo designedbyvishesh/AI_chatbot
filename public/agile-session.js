@@ -576,7 +576,44 @@
     if (startCta) startCta.addEventListener('click', startNewSession);
 
     const backBtn = getEl('agile-back-to-home-btn');
-    if (backBtn) backBtn.addEventListener('click', openHomepageView);
+    if (backBtn) backBtn.addEventListener('click', handleBackClick);
+    initLeaveModalListeners();
+  }
+
+  /* Back from a live session asks first; past sessions go straight home */
+  function handleBackClick() {
+    if (sessionState.mode === 'session') openLeaveModal();
+    else openHomepageView();
+  }
+
+  function openLeaveModal() {
+    const overlay = getEl('agile-leave-modal-overlay');
+    if (!overlay) return openHomepageView();
+    overlay.style.display = 'flex';
+    const cancelBtn = getEl('leave-modal-cancel-btn');
+    if (cancelBtn) cancelBtn.focus();
+  }
+
+  function closeLeaveModal() {
+    const overlay = getEl('agile-leave-modal-overlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+
+  function initLeaveModalListeners() {
+    const overlay = getEl('agile-leave-modal-overlay');
+    const cancelBtn = getEl('leave-modal-cancel-btn');
+    const confirmBtn = getEl('leave-modal-confirm-btn');
+    if (cancelBtn) cancelBtn.addEventListener('click', closeLeaveModal);
+    if (confirmBtn) confirmBtn.addEventListener('click', () => {
+      closeLeaveModal();
+      openHomepageView();
+    });
+    if (overlay) {
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) closeLeaveModal(); });
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && overlay && overlay.style.display === 'flex') closeLeaveModal();
+    });
   }
 
   /* Stop every sound and recording of the session being left: the past-session
