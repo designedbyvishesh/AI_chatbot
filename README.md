@@ -52,26 +52,26 @@ An interactive, AI-native design education and whiteboard prototyping platform b
 
 ```text
 AI_chatbot/
-├── index.html                  # Main AI Tutor & Quiz Engine application shell
-├── agile.html                  # Agile Whiteboard Infinite 2D Canvas workspace
-├── app.js                      # Main frontend logic for AI Tutor & Quiz Engine
-├── agile-session.js            # Canvas rendering engine, marquee selection, & spatial AI
-├── recording-timer.js          # Audio recorder widget & dual-timer component
-├── styles.css                  # Master layout styles for AI Tutor & Quiz views
-├── agile.css                   # Custom design system styles & whiteboard canvas CSS
-├── recording-timer.css         # Styling for audio recorder & timer widget
-├── tokens.css                  # Reusable design system tokens (colors, typography, radii)
+├── public/                     # Everything the browser loads (the only folder served)
+│   ├── index.html              # AI Tutor & Quiz
+│   ├── agile.html              # Agile whiteboard canvas
+│   ├── login.html / login.js   # Sign in, create account, welcome step
+│   ├── account.html / account.js # Profile, privacy, delete account
+│   ├── auth-boot.js / auth-core.js / auth-guard.js # Sign-in plumbing for every page
+│   ├── app.js, agile-session.js, recording-timer.js
+│   ├── tokens.css, styles.css, agile.css, auth.css, recording-timer.css
+│   └── assets/                 # Logos, bunny, wallpaper
 │
-├── server.js                   # Node.js / Express entry point & static file server
-├── server/                     # Backend API routes & database config
-│   ├── config/
-│   │   └── db.js               # MongoDB Atlas connection setup
-│   └── routes/
-│       ├── sessions.routes.js  # /api/sessions endpoints
-│       ├── agile-sessions.routes.js # /api/agile-sessions endpoints
-│       ├── flows.routes.js     # /api/flows endpoints
-│       ├── quizzes.routes.js   # /api/quizzes endpoints
-│       └── chat.routes.js      # /api/chat Groq AI endpoints
+├── server.js                   # Express entry point: security, API routes, serves public/
+├── server/
+│   ├── auth/firebaseAuth.js    # Checks the Firebase sign-in on every /api call
+│   ├── security.js             # Security headers, CORS, request limits
+│   ├── config/                 # MongoDB connection + indexes
+│   ├── routes/                 # /api/me, /api/sessions, /api/agile-sessions, /api/chat, /api/agile ...
+│   ├── services/               # Groq calls, challenge generator, whiteboard coach
+│   └── utils/sanitize.js       # Allow-lists for everything the browser saves
+├── scripts/                    # One-off maintenance scripts
+├── render.yaml                 # Free hosting on Render
 │
 ├── ARCHITECTURE.md             # Detailed technical architecture guide
 └── BTP_PROJECT_ROADMAP.md      # Phased project roadmap & education research
@@ -139,6 +139,20 @@ npm start
 * **AI Design Tutor & Quiz Hub**: Open [`http://localhost:3000`](http://localhost:3000)
 * **Agile Whiteboard & 2D Canvas**: Open [`http://localhost:3000/agile.html`](http://localhost:3000/agile.html)
 * **Sign in / Account**: [`/login.html`](http://localhost:3000/login.html) and [`/account.html`](http://localhost:3000/account.html)
+
+---
+
+## 🌍 Putting Rabbit Online (free, Render)
+
+`render.yaml` sets up one free web service on [Render](https://render.com). The pages and the server run together, and Firebase stays in charge of sign-in.
+
+1. **MongoDB Atlas > Network Access > Add IP Address > Allow access from anywhere (`0.0.0.0/0`).** Render's free plan has no fixed address. Keep a strong database password.
+2. **Render:** sign in with GitHub, then **New > Blueprint**, pick this repository, and paste your values for `MONGODB_URI`, `GROQ_API_KEY` and the four `FIREBASE_*` settings when asked. Then click **Apply**.
+3. When the deploy finishes, copy your address (e.g. `rabbit-xxxx.onrender.com`).
+4. **Firebase console > Authentication > Settings > Authorized domains > Add domain:** paste that address without `https://`.
+5. Open the address. Every push to `main` redeploys automatically.
+
+The free plan sleeps after 15 minutes without visitors, so the first visit after a pause takes about a minute to wake up.
 
 ---
 
