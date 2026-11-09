@@ -2861,25 +2861,29 @@
         const fetchStartTime = Date.now();
 
         try {
-          const res = await fetch('/api/chat', {
+          // Earlier questions and answers on this canvas, so follow-ups like "and for the kiosk?" make sense.
+          // Skips the first card (the challenge itself) and the card being answered now.
+          const history = [];
+          engineState.chatCards.forEach(c => {
+            if (c === newCard || !c.userText || c.isLoading) return;
+            history.push({ role: 'user', content: c.userText });
+            if (c.aiText) history.push({ role: 'assistant', content: c.aiText });
+          });
+
+          const res = await fetch('/api/agile/ask', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              conversationHistory: [
-                ...(sessionState.challenge && sessionState.challenge.prompt
-                  ? [{ role: 'assistant', content: `The designer is working on this whiteboard challenge: ${sessionState.challenge.prompt}` }]
-                  : []),
-                { role: 'user', content: text }
-              ],
-              topic: sessionState.answers.category || 'design-systems'
+              question: text,
+              challenge: (sessionState.challenge && sessionState.challenge.prompt) || '',
+              history
             })
           });
           if (res.ok) {
             const data = await res.json();
-            if (data.success && data.response) {
-              const readable = aiResponseToPlainText(data.response);
-              if (readable) aiResultText = readable;
-            }
+            if (data.success && data.answer) aiResultText = data.answer;
+          } else {
+            aiResultText = 'Rabbit could not answer right now. Keep going and try again in a moment.';
           }
         } catch (e) {
           console.log('AI Chat Fetching fallback:', e);
