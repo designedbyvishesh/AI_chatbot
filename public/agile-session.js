@@ -579,7 +579,18 @@
     if (backBtn) backBtn.addEventListener('click', openHomepageView);
   }
 
+  /* Stop every sound and recording of the session being left: the past-session
+     replay audio, Rabbit's voice, and a live recording's microphone. */
+  function stopAllSessionAudio() {
+    stopReplay();
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    const recorder = window.AgileRecorderInstance;
+    if (recorder && typeof recorder.destroy === 'function') recorder.destroy();
+    window.AgileRecorderInstance = null;
+  }
+
   function openHomepageView() {
+    stopAllSessionAudio();
     sessionState.mode = 'homepage';
     sessionState.isCanvasLocked = false;
     const canvasFrame = document.querySelector('.agile-right-canvas-frame');
@@ -773,6 +784,10 @@
     const containerId = isPast ? 'agile-recorder-container-past' : 'agile-recorder-container-current';
     const container = getEl(containerId);
     if (!container) return;
+    // A previous recorder (e.g. another past session) must not keep playing behind the new one
+    const previous = window.AgileRecorderInstance;
+    if (previous && typeof previous.destroy === 'function') previous.destroy();
+    window.AgileRecorderInstance = null;
     container.innerHTML = '';
     if (typeof RecordingTimer === 'function') {
       window.AgileRecorderInstance = new RecordingTimer(`#${containerId}`, {
@@ -971,9 +986,9 @@
       if (catEl && challenge.category) catEl.textContent = challenge.category;
 
       if (window.AgileRecorderInstance && sessionState.answers.duration && sessionState.answers.duration !== 'No') {
+        // The challenge itself is not part of the recording: people read it first,
+        // and the recording covers what happens after (questions, answers, talking)
         window.AgileRecorderInstance.startRecording();
-        // The challenge is the first thing Rabbit "says" in the recording
-        logRecordingEvent({ type: 'ai', text: challengeCard.aiText, cardId: challengeCard.id, t: 0 });
       }
     });
   }
@@ -1120,8 +1135,10 @@
 
   async function prepareReplay(session) {
     const token = ++replay.token;
+    // Older sessions logged the challenge as Rabbit speaking at 0:00; skip it so
+    // replay starts with what happened after the challenge, like new sessions
     replay.events = Array.isArray(session.recordingEvents)
-      ? session.recordingEvents.slice().sort((a, b) => a.t - b.t)
+      ? session.recordingEvents.filter(ev => !(ev.type === 'ai' && ev.t === 0)).sort((a, b) => a.t - b.t)
       : [];
     replay.lastT = 0;
 
