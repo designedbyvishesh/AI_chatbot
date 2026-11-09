@@ -9,7 +9,8 @@ const { buildSystemPrompt } = require('../prompts/designMentorPrompt');
 const { getContext } = require('./knowledgeRetriever');
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'qwen/qwen3.8-27b';
+// Override with GROQ_MODEL in .env if Groq retires or renames this model.
+const MODEL = process.env.GROQ_MODEL || 'qwen/qwen3.8-27b';
 const MAX_TOKENS = 1024;
 
 /**
@@ -43,6 +44,22 @@ async function chat(conversationHistory, topic = 'design-systems') {
   ];
 
   // 4. Call Groq API
+  const rawContent = await callGroq(messages);
+
+  // 5. Parse the structured JSON response
+  return parseStructuredResponse(rawContent);
+}
+
+/**
+ * Low-level Groq call shared by the tutor chat and the Agile challenge generator.
+ * Returns the raw text content of the first choice.
+ */
+async function callGroq(messages, { maxTokens = MAX_TOKENS, temperature = 0.7 } = {}) {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error('GROQ_API_KEY is not set in environment variables. Add it to your .env file.');
+  }
+
   const response = await fetch(GROQ_API_URL, {
     method: 'POST',
     headers: {
@@ -51,9 +68,9 @@ async function chat(conversationHistory, topic = 'design-systems') {
     },
     body: JSON.stringify({
       model: MODEL,
-      messages: messages,
-      max_tokens: MAX_TOKENS,
-      temperature: 0.7,
+      messages,
+      max_tokens: maxTokens,
+      temperature,
       top_p: 0.9
     })
   });
@@ -65,13 +82,10 @@ async function chat(conversationHistory, topic = 'design-systems') {
 
   const data = await response.json();
   const rawContent = data.choices?.[0]?.message?.content;
-
   if (!rawContent) {
     throw new Error('Groq API returned empty response');
   }
-
-  // 5. Parse the structured JSON response
-  return parseStructuredResponse(rawContent);
+  return rawContent;
 }
 
 /**
@@ -139,4 +153,4 @@ function parseStructuredResponse(rawContent) {
   };
 }
 
-module.exports = { chat };
+module.exports = { chat, callGroq };
