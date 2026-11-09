@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDB } = require('../config/db');
+const { cleanJson } = require('../utils/sanitize');
 
 // Save Hierarchy Flow
 router.post('/', async (req, res) => {
@@ -9,7 +10,8 @@ router.post('/', async (req, res) => {
     if (!db) return res.status(503).json({ error: 'DB not connected' });
     const collection = db.collection('hierarchy_flows');
     const document = {
-      ...req.body,
+      ...cleanJson(req.body || {}),
+      userId: req.user.uid,
       createdAt: new Date()
     };
     const result = await collection.insertOne(document);
@@ -25,7 +27,7 @@ router.get('/', async (req, res) => {
     const db = getDB();
     if (!db) return res.status(503).json({ error: 'DB not connected' });
     const collection = db.collection('hierarchy_flows');
-    const flows = await collection.find({}).sort({ createdAt: -1 }).limit(20).toArray();
+    const flows = await collection.find({ userId: req.user.uid }).sort({ createdAt: -1 }).limit(20).toArray();
     res.json({ success: true, flows });
   } catch (err) {
     res.status(500).json({ error: err.message });

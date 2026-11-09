@@ -16,6 +16,8 @@
   <link rel="stylesheet" href="tokens.css" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="agile.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <script src="auth-boot.js"></script>
 </head>
 
 <body>
@@ -311,7 +313,7 @@
         <aside class="agile-home-left-panel">
           <!-- Header Greeting -->
           <div class="agile-home-greeting">
-            <span>👋</span> <span>Hi Rahul</span>
+            <span>👋</span> <span data-rabbit-greeting>Hi there</span>
           </div>
           <h2 class="agile-home-title">See your growth...</h2>
 
@@ -326,7 +328,7 @@
                 <div class="agile-stat-val-sub" id="stat-lowest-times">
                   <span style="font-size: 20px; font-weight: 600; color: #fff;">4m 12s</span> <span style="font-size: 12px; color: rgba(255,255,255,0.6);">avg time</span>
                 </div>
-                <div class="agile-stat-lbl">Lowest time taken</div>
+                <div class="agile-stat-lbl">This week</div>
               </div>
             </div>
 
@@ -463,6 +465,7 @@
   </div>
 
   <script src="app.js"></script>
+  <script type="module" src="auth-guard.js"></script>
 </body>
 
 </html>

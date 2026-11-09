@@ -1,108 +1,113 @@
+/**
+ * Agile whiteboard sessions. Every route only sees the signed-in user's own
+ * sessions (req.user.uid is set by requireUser in server.js).
+ */
+
 const express = require('express');
 const router = express.Router();
 const { getDB } = require('../config/db');
+const { pickAgileSession, isSafeId } = require('../utils/sanitize');
 
-// Create / Save New Agile Whiteboard Session
+const COLLECTION = 'agile_sessions';
+
+function collectionOr503(res) {
+  const db = getDB();
+  if (!db) {
+    res.status(503).json({ success: false, error: 'DB not connected' });
+    return null;
+  }
+  return db.collection(COLLECTION);
+}
+
+const toClient = (doc) => {
+  const { _id, userId, ...rest } = doc;
+  return { ...rest, id: doc.id || _id.toString() };
+};
+
+// Create or update a session (the client sends the whole session on every save)
 router.post('/', async (req, res) => {
   try {
-    const db = getDB();
-    if (!db) return res.status(503).json({ error: 'DB not connected' });
-    const collection = db.collection('agile_sessions');
+    const collection = collectionOr503(res);
+    if (!collection) return;
 
-    const sessionData = {
-      id: req.body.id || `agile-${Date.now()}`,
-      title: req.body.title || 'W1',
-      prompt: req.body.prompt || '',
-      answers: req.body.answers || {},
-      difficulty: req.body.difficulty || req.body.answers?.difficulty || 'Normal',
-      category: req.body.category || req.body.answers?.category || 'Random',
-      duration: req.body.duration || req.body.answers?.duration || '45 min',
-      recordedTime: req.body.recordedTime || '- 45:00',
-      notes: req.body.notes || [],
-      chatHistory: req.body.chatHistory || [],
-      audioUrl: req.body.audioUrl || '',
-      serverTimestamp: new Date()
-    };
-
-    const result = await collection.insertOne(sessionData);
-    res.json({ success: true, id: sessionData.id, mongoId: result.insertedId });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Fetch All Agile Whiteboard Sessions (Sorted newest first)
-router.get('/', async (req, res) => {
-  try {
-    const db = getDB();
-    if (!db) return res.status(503).json({ error: 'DB not connected' });
-    const collection = db.collection('agile_sessions');
-
-    const raw = await collection.find({}).sort({ serverTimestamp: -1 }).limit(100).toArray();
-    const sessions = raw.map(doc => ({
-      ...doc,
-      id: doc.id || doc._id.toString(),
-      _id: undefined
-    }));
-
-    res.json({ success: true, sessions });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Fetch Single Agile Session by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const db = getDB();
-    if (!db) return res.status(503).json({ error: 'DB not connected' });
-    const collection = db.collection('agile_sessions');
-
-    const session = await collection.findOne({ id: req.params.id });
-    if (!session) return res.status(404).json({ error: 'Session not found' });
-
-    res.json({ success: true, session: { ...session, id: session.id || session._id.toString(), _id: undefined } });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Update Agile Session (Title, Notes, Chat History, or Time)
-router.put('/:id', async (req, res) => {
-  try {
-    const db = getDB();
-    if (!db) return res.status(503).json({ error: 'DB not connected' });
-    const collection = db.collection('agile_sessions');
-
-    const updateFields = {
-      ...req.body,
-      updatedAt: new Date()
-    };
-    delete updateFields._id;
-    delete updateFields.id;
+    const id = isSafeId(req.body && req.body.id) ? req.body.id : `agile-${Date.now()}`;
+    const fields = pickAgileSession(req.body);
 
     await collection.updateOne(
-      { id: req.params.id },
-      { $set: updateFields }
+      { userId: req.user.uid, id },
+      {
+        $set: { ...fields, serverTimestamp: new Date() },
+        $setOnInsert: { userId: req.user.uid, id, createdAt: new Date() }
+      },
+      { upsert: true }
     );
-
-    res.json({ success: true, id: req.params.id });
+    res.json({ success: true, id });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[AgileSessions] save:', err.message);
+    res.status(500).json({ success: false, error: 'Could not save the session.' });
   }
 });
 
-// Delete Agile Session
+// List my sessions, newest first
+router.get('/', async (req, res) => {
+  try {
+    const collection = collectionOr503(res);
+    if (!collection) return;
+
+    const raw = await collection
+      .find({ userId: req.user.uid })
+      .sort({ serverTimestamp: -1 })
+      .limit(200)
+      .toArray();
+    res.json({ success: true, sessions: raw.map(toClient) });
+  } catch (err) {
+    console.error('[AgileSessions] list:', err.message);
+    res.status(500).json({ success: false, error: 'Could not load sessions.' });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  try {
+    const collection = collectionOr503(res);
+    if (!collection) return;
+
+    const session = await collection.findOne({ userId: req.user.uid, id: req.params.id });
+    if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
+    res.json({ success: true, session: toClient(session) });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Could not load the session.' });
+  }
+});
+
+// Update some fields (title, notes, favourite, ...) of one of my sessions
+router.put('/:id', async (req, res) => {
+  try {
+    const collection = collectionOr503(res);
+    if (!collection) return;
+
+    const fields = pickAgileSession(req.body);
+    if (!Object.keys(fields).length) return res.status(400).json({ success: false, error: 'Nothing to update' });
+
+    const result = await collection.updateOne(
+      { userId: req.user.uid, id: req.params.id },
+      { $set: { ...fields, updatedAt: new Date() } }
+    );
+    if (!result.matchedCount) return res.status(404).json({ success: false, error: 'Session not found' });
+    res.json({ success: true, id: req.params.id });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Could not update the session.' });
+  }
+});
+
 router.delete('/:id', async (req, res) => {
   try {
-    const db = getDB();
-    if (!db) return res.status(503).json({ error: 'DB not connected' });
-    const collection = db.collection('agile_sessions');
+    const collection = collectionOr503(res);
+    if (!collection) return;
 
-    await collection.deleteOne({ id: req.params.id });
+    await collection.deleteOne({ userId: req.user.uid, id: req.params.id });
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, error: 'Could not delete the session.' });
   }
 });
 
