@@ -342,6 +342,11 @@ class RecordingTimer {
    * State Machine Controls
    */
   toggleRecordPause() {
+    // Past session: the button plays/pauses the saved recording, never starts a new one
+    if (this.isHistoryMode) {
+      if (this.audioUrl || this.audioElement) this.playRealAudio();
+      return;
+    }
     if (!this.isUnlocked) return;
     if (this.state === 'idle') this.startRecording();
     else if (this.state === 'recording') this.pauseRecording();
@@ -407,6 +412,46 @@ class RecordingTimer {
   }
 
   /**
+   * Load a saved recording for replay in a past session.
+   * durationHint: seconds recorded (MediaRecorder WebM files often report
+   * an unknown duration until fully played, so we keep our own).
+   */
+  loadRecording(audioUrl, durationHint = 0) {
+    if (this.audioElement) {
+      this.audioElement.pause();
+      this.audioElement = null;
+    }
+    this.isHistoryMode = true;
+    this.isUnlocked = true;
+    this.realAudioPlaying = false;
+    this.audioUrl = audioUrl;
+    this.recordingDuration = durationHint > 0 ? durationHint : 0;
+    this.state = 'paused';
+    this.elapsedSecondsFloat = 0;
+    this.elapsedSeconds = 0;
+    this.remainingSeconds = Math.round(this.recordingDuration);
+    this.generateHistoryWaveform(Math.max(60, Math.ceil(this.recordingDuration)));
+    if (this.dom && this.dom.recordBtn) {
+      this.dom.recordBtn.classList.remove('is-disabled');
+      this.dom.recordBtn.classList.add('is-paused');
+    }
+    this.updateTimerDisplay();
+  }
+
+  getPlaybackDuration() {
+    const d = this.audioElement && this.audioElement.duration;
+    if (d && isFinite(d)) return d;
+    return this.recordingDuration || 0;
+  }
+
+  notifyPlayback(kind) {
+    if (this.options && typeof this.options.onPlayback === 'function') {
+      const t = this.audioElement ? this.audioElement.currentTime : this.elapsedSecondsFloat;
+      this.options.onPlayback(t, kind);
+    }
+  }
+
+  /**
    * Real Audio Playback & Replay Controls (Past Session View)
    */
   playRealAudio(audioUrl) {
@@ -424,14 +469,14 @@ class RecordingTimer {
       this.audioElement = new Audio(this.audioUrl);
       this.audioElement.addEventListener('ended', () => this.pauseRealAudio());
       this.audioElement.addEventListener('timeupdate', () => {
-        if (this.audioElement && this.audioElement.duration) {
-          const current = this.audioElement.currentTime;
-          const total = this.audioElement.duration;
-          this.elapsedSecondsFloat = current;
-          this.elapsedSeconds = Math.floor(current);
-          this.remainingSeconds = Math.max(0, Math.floor(total - current));
-          this.updateTimerDisplay();
-        }
+        if (!this.audioElement) return;
+        const current = this.audioElement.currentTime;
+        const total = this.getPlaybackDuration();
+        this.elapsedSecondsFloat = current;
+        this.elapsedSeconds = Math.floor(current);
+        this.remainingSeconds = Math.max(0, Math.floor(total - current));
+        this.updateTimerDisplay();
+        this.notifyPlayback('time');
       });
     }
 
@@ -441,7 +486,7 @@ class RecordingTimer {
         this.dom.recordBtn.classList.remove('is-paused');
         this.dom.outerRing.classList.add('is-rotating');
         this.state = 'recording';
-        this.startTimerTicker();
+        this.notifyPlayback('play');
       }).catch(err => console.warn('Audio playback error:', err));
     }
 
@@ -456,6 +501,7 @@ class RecordingTimer {
     if (this.audioElement) this.audioElement.pause();
     this.clearTimerTicker();
     this.showSkipControls();
+    this.notifyPlayback('pause');
   }
 
   setDuration(totalSeconds) {
@@ -497,9 +543,8 @@ class RecordingTimer {
       this.audioElement.currentTime = Math.max(0, this.audioElement.currentTime - secs);
       this.elapsedSecondsFloat = this.audioElement.currentTime;
       this.elapsedSeconds = Math.floor(this.elapsedSecondsFloat);
-      if (this.audioElement.duration) {
-        this.remainingSeconds = Math.max(0, Math.floor(this.audioElement.duration - this.audioElement.currentTime));
-      }
+      this.remainingSeconds = Math.max(0, Math.floor(this.getPlaybackDuration() - this.audioElement.currentTime));
+      this.notifyPlayback('seek');
     } else {
       this.remainingSeconds += secs;
       this.elapsedSecondsFloat = Math.max(0, this.elapsedSecondsFloat - secs);
@@ -510,11 +555,12 @@ class RecordingTimer {
 
   skipForward(secs = 10) {
     if (this.audioElement) {
-      const dur = this.audioElement.duration || 3600;
+      const dur = this.getPlaybackDuration() || 3600;
       this.audioElement.currentTime = Math.min(dur, this.audioElement.currentTime + secs);
       this.elapsedSecondsFloat = this.audioElement.currentTime;
       this.elapsedSeconds = Math.floor(this.elapsedSecondsFloat);
       this.remainingSeconds = Math.max(0, Math.floor(dur - this.audioElement.currentTime));
+      this.notifyPlayback('seek');
     } else {
       this.remainingSeconds = Math.max(0, this.remainingSeconds - secs);
       this.elapsedSecondsFloat += secs;

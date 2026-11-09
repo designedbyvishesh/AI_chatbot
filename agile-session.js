@@ -716,6 +716,8 @@
     sessionState.activeSessionId = `agile-${Date.now()}`;
     sessionState.answers = { difficulty: 'Normal', category: 'Random', muteNotification: 'Yes', duration: '45 min' };
     sessionState.challenge = null;
+    sessionState.recordingEvents = [];
+    stopReplay();
 
     // Lock canvas while mandatory questions are active
     sessionState.isCanvasLocked = true;
@@ -815,6 +817,7 @@
       notesInputPast.value = session.notes.join('\n');
     }
 
+    stopReplay();
     mountRecorderWidget();
     if (window.AgileRecorderInstance) {
       window.AgileRecorderInstance.setDuration(2700);
@@ -822,6 +825,7 @@
         window.AgileRecorderInstance.showSkipControls();
       }
     }
+    prepareReplay(session);
 
     // Hide pre-prompting questions feed
     const feed = getEl('agile-questions-feed');
@@ -887,7 +891,8 @@
       window.AgileRecorderInstance = new RecordingTimer(`#${containerId}`, {
         onSave: (payload) => {
           console.log('Audio Recording Saved:', payload);
-        }
+        },
+        onPlayback: (t, kind) => handleReplayPlayback(t, kind)
       });
     }
   }
@@ -1080,6 +1085,8 @@
 
       if (window.AgileRecorderInstance && sessionState.answers.duration && sessionState.answers.duration !== 'No') {
         window.AgileRecorderInstance.startRecording();
+        // The challenge is the first thing Rabbit "says" in the recording
+        logRecordingEvent({ type: 'ai', text: challengeCard.aiText, cardId: challengeCard.id, t: 0 });
       }
     });
   }
@@ -1127,6 +1134,184 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════════════════
+     SESSION RECORDING: event timeline, IndexedDB audio storage and replay
+     The microphone recording captures the user's voice (spoken prompts and
+     thinking aloud while whiteboarding). Rabbit's read-aloud voice cannot be
+     captured by a web page, so prompts and AI answers are stored as a timeline
+     (seconds into the recording) and Rabbit speaks them again during replay.
+     ═══════════════════════════════════════════════════════════════════════════ */
+  function logRecordingEvent(event) {
+    const recorder = window.AgileRecorderInstance;
+    if (!recorder || recorder.isHistoryMode || sessionState.mode === 'history') return;
+    if (recorder.state !== 'recording' && recorder.state !== 'paused') return;
+    if (!sessionState.recordingEvents) sessionState.recordingEvents = [];
+    const t = typeof event.t === 'number' ? event.t : (recorder.elapsedSecondsFloat || 0);
+    sessionState.recordingEvents.push({
+      t: Math.round(t * 10) / 10,
+      type: event.type,           // 'user' | 'ai'
+      via: event.via || undefined, // 'voice' | 'typed' for user events
+      text: String(event.text || '').slice(0, 2000),
+      cardId: event.cardId
+    });
+  }
+  window.AgileLogRecordingEvent = logRecordingEvent;
+
+  const RECORDING_DB = 'rabbit-agile-recordings';
+  function openRecordingDb() {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) return reject(new Error('IndexedDB unavailable'));
+      const req = indexedDB.open(RECORDING_DB, 1);
+      req.onupgradeneeded = () => req.result.createObjectStore('audio');
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function saveRecordingBlob(sessionId, blob) {
+    try {
+      const db = await openRecordingDb();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction('audio', 'readwrite');
+        tx.objectStore('audio').put(blob, sessionId);
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+      db.close();
+      return true;
+    } catch (e) {
+      console.warn('Could not save recording:', e);
+      return false;
+    }
+  }
+
+  async function loadRecordingBlob(sessionId) {
+    try {
+      const db = await openRecordingDb();
+      const blob = await new Promise((resolve, reject) => {
+        const req = db.transaction('audio', 'readonly').objectStore('audio').get(sessionId);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+      db.close();
+      return blob;
+    } catch (e) {
+      console.warn('Could not load recording:', e);
+      return null;
+    }
+  }
+
+  const replay = { events: [], lastT: 0, playing: false, objectUrl: null, captionTimer: null, token: 0 };
+
+  function stopReplay() {
+    replay.token++;
+    replay.events = [];
+    replay.lastT = 0;
+    replay.playing = false;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (replay.objectUrl) { URL.revokeObjectURL(replay.objectUrl); replay.objectUrl = null; }
+    hideReplayCaption();
+  }
+
+  async function prepareReplay(session) {
+    const token = ++replay.token;
+    replay.events = Array.isArray(session.recordingEvents)
+      ? session.recordingEvents.slice().sort((a, b) => a.t - b.t)
+      : [];
+    replay.lastT = 0;
+
+    let url = null;
+    if (session.hasRecording) {
+      const blob = await loadRecordingBlob(session.id);
+      if (token !== replay.token) return; // user opened another session meanwhile
+      if (blob) { url = URL.createObjectURL(blob); replay.objectUrl = url; }
+    } else if (typeof session.audioUrl === 'string' && session.audioUrl.startsWith('data:audio')) {
+      url = session.audioUrl; // sessions saved before IndexedDB storage
+    }
+
+    const recorder = window.AgileRecorderInstance;
+    if (url && recorder && recorder.loadRecording) {
+      recorder.loadRecording(url, session.recordingDuration || 0);
+    }
+  }
+
+  function speechTextFor(text) {
+    return String(text || '').replace(/^\s*[-•*]\s+/gm, '').replace(/[`#*_]/g, '').replace(/\s+/g, ' ').trim();
+  }
+
+  function showReplayCaption(event) {
+    let el = getEl('agile-replay-caption');
+    const frame = document.querySelector('.agile-right-canvas-frame');
+    if (!el && frame) {
+      el = document.createElement('div');
+      el.id = 'agile-replay-caption';
+      el.className = 'agile-replay-caption';
+      frame.appendChild(el);
+    }
+    if (!el) return;
+    const who = event.type === 'ai' ? 'Rabbit' : (event.via === 'voice' ? 'You said' : 'You typed');
+    el.innerHTML = `<span class="agile-replay-caption__who">${who}</span><span class="agile-replay-caption__text"></span>`;
+    el.querySelector('.agile-replay-caption__text').textContent = speechTextFor(event.text);
+    el.classList.add('is-visible');
+    el.classList.toggle('is-ai', event.type === 'ai');
+
+    document.querySelectorAll('.agile-spatial-chat-node.is-replaying').forEach(n => n.classList.remove('is-replaying'));
+    const card = event.cardId != null ? getEl(`spatial-card-${event.cardId}`) : null;
+    if (card) card.classList.add('is-replaying');
+
+    clearTimeout(replay.captionTimer);
+    const ms = Math.min(15000, 2500 + speechTextFor(event.text).length * 55);
+    replay.captionTimer = setTimeout(hideReplayCaption, ms);
+  }
+
+  function hideReplayCaption() {
+    clearTimeout(replay.captionTimer);
+    const el = getEl('agile-replay-caption');
+    if (el) el.classList.remove('is-visible');
+    document.querySelectorAll('.agile-spatial-chat-node.is-replaying').forEach(n => n.classList.remove('is-replaying'));
+  }
+
+  function fireReplayEvent(event) {
+    showReplayCaption(event);
+    // The user's own voice is already in the audio; Rabbit's answers are spoken again here
+    if (event.type === 'ai' && 'speechSynthesis' in window) {
+      const utter = new SpeechSynthesisUtterance(speechTextFor(event.text));
+      utter.lang = navigator.language || 'en-US';
+      utter.rate = 1.05;
+      window.speechSynthesis.speak(utter);
+    }
+  }
+
+  function handleReplayPlayback(t, kind) {
+    if (sessionState.mode !== 'history') return;
+    if (kind === 'pause') {
+      replay.playing = false;
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      replay.lastT = t;
+      return;
+    }
+    if (kind === 'seek') {
+      // Jumping around: stop current speech and continue from the new position
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      hideReplayCaption();
+      replay.lastT = t < 0.3 ? -1 : t;
+      return;
+    }
+    if (kind === 'play') {
+      replay.playing = true;
+      // Starting from the very beginning: include events at t = 0 (the challenge)
+      if (t < 0.3) replay.lastT = -1;
+      return;
+    }
+    // 'time': fire every event between the last position and now
+    if (!replay.playing) return;
+    if (t < replay.lastT || t - replay.lastT > 3) { replay.lastT = t; return; }
+    replay.events.forEach(ev => {
+      if (ev.t > replay.lastT && ev.t <= t) fireReplayEvent(ev);
+    });
+    replay.lastT = t;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
      PERMANENT SAVE SESSION BUTTON HANDLER
      ═══════════════════════════════════════════════════════════════════════════ */
   function initHeaderSaveButton() {
@@ -1136,13 +1321,29 @@
     saveBtn.addEventListener('click', async () => {
       saveBtn.style.opacity = '0.7';
 
-      let audioUrl = null;
-      if (window.AgileRecorderInstance) {
-        if (window.AgileRecorderInstance.saveSession) {
-          window.AgileRecorderInstance.saveSession();
-        }
-        if (window.AgileRecorderInstance.getAudioDataUrl) {
-          audioUrl = await window.AgileRecorderInstance.getAudioDataUrl();
+      if (!sessionState.activeSessionId) {
+        sessionState.activeSessionId = `agile-${Date.now()}`;
+      }
+
+      // Save the voice recording to IndexedDB (handles long recordings; localStorage is
+      // capped at ~5 MB and the API rejects large bodies), keyed by session id.
+      let hasRecording = false;
+      let recordingDuration = 0;
+      let recordingEvents = sessionState.recordingEvents || [];
+      const recorder = window.AgileRecorderInstance;
+      if (sessionState.mode === 'history') {
+        // Re-saving a past session (e.g. edited notes) keeps its original recording
+        const existing = sessionState.pastSessions.find(x => x.id === sessionState.activeSessionId) || {};
+        hasRecording = !!existing.hasRecording;
+        recordingDuration = existing.recordingDuration || 0;
+        recordingEvents = existing.recordingEvents || [];
+      }
+      if (recorder && sessionState.mode !== 'history') {
+        recordingDuration = recorder.elapsedSecondsFloat || 0;
+        if (recorder.saveSession) recorder.saveSession();
+        const blob = recorder.recordedBlob;
+        if (blob && blob.size > 0) {
+          hasRecording = await saveRecordingBlob(sessionState.activeSessionId, blob);
         }
       }
 
@@ -1171,8 +1372,14 @@
         dateLabel: 'today',
         timestamp: Date.now(),
         notes: currentNotes,
-        audioUrl: audioUrl || undefined,
-        chatCards: window.AgileSpatialCards ? JSON.parse(JSON.stringify(window.AgileSpatialCards)) : [],
+        hasRecording: hasRecording || undefined,
+        recordingDuration: hasRecording ? Math.round(recordingDuration * 10) / 10 : undefined,
+        // Timeline of what was said/asked during the recording, replayed alongside the audio
+        recordingEvents: recordingEvents.slice(0, 500),
+        // Read-aloud and streaming flags are live-only state, not saved
+        chatCards: window.AgileSpatialCards
+          ? JSON.parse(JSON.stringify(window.AgileSpatialCards, (k, v) => (['speak', 'spokenIdx', 'isStreaming'].includes(k) ? undefined : v)))
+          : [],
         shapes: window.AgileCanvasShapes ? JSON.parse(JSON.stringify(window.AgileCanvasShapes)) : [],
         chatHistory: window.AgileSpatialCards ? window.AgileSpatialCards.map(c => ({
           type: c.userText ? 'user' : 'ai',
@@ -2797,6 +3004,9 @@
       if (newCard.speak) stopAllSpeech();
 
       engineState.chatCards.push(newCard);
+      // Recording timeline: what the user asked, and how (spoken words are also in the audio)
+      logRecordingEvent({ type: 'user', via: fromVoice ? 'voice' : 'typed', text, cardId: newCard.id });
+      let aiStartT = null;
       renderCanvas(); // Synchronously render new card in DOM with loading bunny
 
       // Immediately measure newly created card's actual DOM height
@@ -2859,6 +3069,8 @@
             const chunk = decoder.decode(value, { stream: true });
             if (!chunk) continue;
             if (newCard.isLoading) {
+              const rec = window.AgileRecorderInstance;
+              aiStartT = rec ? rec.elapsedSecondsFloat : null;
               newCard.isLoading = false;
               newCard.isStreaming = true;
               // Trim leading whitespace the model sometimes starts with
@@ -2880,6 +3092,7 @@
         newCard.aiText = newCard.aiText.trim();
         newCard.isLoading = false;
         newCard.isStreaming = false;
+        logRecordingEvent({ type: 'ai', text: newCard.aiText, cardId: newCard.id, t: aiStartT == null ? undefined : aiStartT });
         speakNewSentences(newCard, true);
         renderCanvas();
 
