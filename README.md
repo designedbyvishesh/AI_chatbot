@@ -53,12 +53,12 @@ An interactive, AI-native design education and whiteboard prototyping platform b
 ```text
 AI_chatbot/
 ├── public/                     # Everything the browser loads (the only folder served)
-│   ├── index.html              # AI Tutor & Quiz
+│   ├── index.html              # Quiz mode "Coming soon" screen (full Quiz parked in drafts/quiz/)
 │   ├── agile.html              # Agile whiteboard canvas
 │   ├── login.html / login.js   # Sign in, create account, welcome step
 │   ├── account.html / account.js # Profile, privacy, delete account
 │   ├── auth-boot.js / auth-core.js / auth-guard.js # Sign-in plumbing for every page
-│   ├── app.js, agile-session.js, recording-timer.js
+│   ├── agile-session.js, recording-timer.js
 │   ├── tokens.css, styles.css, agile.css, auth.css, recording-timer.css
 │   └── assets/                 # Logos, bunny, wallpaper
 │

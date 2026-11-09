@@ -138,7 +138,7 @@
           <div class="agile-home-feedback-wrapper">
             <div class="agile-home-feedback-card">
               <span class="agile-feedback-text">Share your feedback</span>
-              <span class="agile-feedback-status">Not available</span>
+              <span class="agile-feedback-status">Coming soon</span>
             </div>
           </div>
         </aside>
@@ -164,7 +164,7 @@
             </div>
 
             <!-- Past Session Heading -->
-            <h3 class="agile-past-sessions-heading">Past session</h3>
+            <h3 class="agile-past-sessions-heading" id="agile-past-sessions-heading">Past session</h3>
 
             <!-- Past Sessions List -->
             <div class="agile-home-sessions-list" id="agile-homepage-session-list">
@@ -453,9 +453,12 @@
           quizOpt.addEventListener('click', (e) => {
             e.stopPropagation();
             switcher.setAttribute('data-active-mode', 'quiz');
+            // Show the popping-rabbit loader first, so there is never a blank screen
+            const loader = document.getElementById('agile-home-page-loader');
+            if (loader) loader.classList.remove('is-hidden');
             setTimeout(() => {
               window.location.href = 'index.html';
-            }, 180);
+            }, 450);
           });
         }
 

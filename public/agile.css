@@ -292,6 +292,18 @@
   width: 100%;
 }
 
+/* First visit (no past sessions): keep the title at the top and put the
+   challenge image + start bar in the middle of the frame */
+.agile-home-right-content.is-first-visit {
+  min-height: 100%;
+}
+.agile-home-right-content.is-first-visit .agile-view-challenge-wrapper {
+  margin-top: auto !important;
+}
+.agile-home-right-content.is-first-visit .agile-start-cta {
+  margin-bottom: auto;
+}
+
 .agile-sessions-heading {
   font-family: 'DM Serif Text', 'Playfair Display', Georgia, serif;
   font-size: 30px;

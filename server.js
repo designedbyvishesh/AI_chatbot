@@ -26,6 +26,8 @@ app.use('/api', corsPolicy(), apiLimiter);
 // Sessions carry canvas shapes and chat cards, so allow a little more than the 100 KB default
 app.use(express.json({ limit: '2mb' }));
 // Only the public/ folder is served, so server code, prompts and .env are never downloadable
+// Agile is the start page while Quiz mode is being finished
+app.get('/', (req, res) => res.redirect(302, '/agile.html'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Connect Database
