@@ -137,7 +137,70 @@ class RecordingTimer {
     this.dom.ext5Btn.addEventListener('click', () => this.addMinutes(5));
     this.dom.ext10Btn.addEventListener('click', () => this.addMinutes(10));
     this.dom.saveBtn.addEventListener('click', () => this.saveRecording());
-    window.addEventListener('resize', () => this.resizeCanvas());
+    this.onResize = () => this.resizeCanvas();
+    window.addEventListener('resize', this.onResize);
+  }
+
+  /**
+   * Stop everything this recorder is doing: replay audio, live microphone,
+   * timers and the drawing loop. Called when leaving a session (Back button)
+   * or before a new recorder replaces this one, so nothing keeps playing or
+   * recording in the background.
+   */
+  destroy() {
+    this.destroyed = true;
+    if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+    this.animationFrameId = null;
+    this.clearTimerTicker();
+
+    // Replay of a past session
+    if (this.audioElement) {
+      try {
+        this.audioElement.pause();
+        this.audioElement.removeAttribute('src');
+        this.audioElement.load();
+      } catch (e) {}
+      this.audioElement = null;
+    }
+    this.realAudioPlaying = false;
+
+    // Live recording: release the microphone (the unsaved recording is discarded)
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      try { this.mediaRecorder.stop(); } catch (e) {}
+    }
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach(track => track.stop());
+      this.mediaStream = null;
+    }
+    if (this.audioCtx && this.audioCtx.state !== 'closed') {
+      try { this.audioCtx.close(); } catch (e) {}
+    }
+    this.analyser = null;
+    this.inputGain = null;
+    this.state = 'idle';
+
+    if (this.onResize) window.removeEventListener('resize', this.onResize);
+  }
+
+  /** True while Rabbit's voice (browser text-to-speech) is speaking. */
+  static isRabbitSpeaking() {
+    const s = window.speechSynthesis;
+    return !!(s && s.speaking && !s.paused);
+  }
+
+  /**
+   * Bar height for Rabbit's voice. The browser's speech voice cannot be
+   * measured, so this draws a natural speech-like pattern (syllables, small
+   * pauses) for as long as Rabbit is actually speaking.
+   */
+  static rabbitVoiceLevel(t) {
+    const TAU = Math.PI * 2;
+    // Short gaps between phrases
+    if (Math.sin(TAU * 0.37 * t + 1.3) > 0.93) return 0.06;
+    const syllable = Math.abs(Math.sin(TAU * 3.6 * t + 2 * Math.sin(TAU * 0.8 * t)));
+    const phrase = 0.65 + 0.35 * Math.sin(TAU * 0.55 * t + 0.4);
+    const jitter = (Math.random() - 0.5) * 0.18;
+    return Math.min(0.92, Math.max(0.08, 0.18 + 0.62 * syllable * phrase + jitter));
   }
 
   /**
@@ -165,6 +228,7 @@ class RecordingTimer {
     let lastTime = performance.now();
 
     const draw = (now) => {
+      if (this.destroyed) return;
       const currentTime = now || performance.now();
       const dt = Math.min(0.1, (currentTime - lastTime) / 1000);
       lastTime = currentTime;
@@ -186,17 +250,29 @@ class RecordingTimer {
       const rightX = width - (8 * dpr);
       const barWidth = 2 * dpr;
 
+      const rabbitSpeaking = RecordingTimer.isRabbitSpeaking();
+
       if (this.state === 'recording') {
         if (this.realAudioPlaying && this.audioElement) {
           this.elapsedSecondsFloat = this.audioElement.currentTime;
           this.elapsedSeconds = Math.floor(this.elapsedSecondsFloat);
+          // Replay: Rabbit's answers are spoken again now, so draw its voice here.
+          // (Track our own last position: 'timeupdate' also moves elapsedSecondsFloat.)
+          const nowT = this.elapsedSecondsFloat;
+          const lastT = typeof this.lastVoiceMarkT === 'number' ? this.lastVoiceMarkT : nowT;
+          if (rabbitSpeaking) this.markRabbitVoice(lastT, nowT);
+          this.lastVoiceMarkT = nowT;
         } else {
           this.elapsedSecondsFloat += dt;
           this.elapsedSeconds = Math.floor(this.elapsedSecondsFloat);
 
           if (currentTime - this.lastSampleTime > 63.2) {
-            const amp = this.getAudioAmplitude();
-            this.waveformHistory.push({ time: this.elapsedSecondsFloat, amp });
+            // While Rabbit reads an answer aloud the mic is muted in the recording,
+            // so show Rabbit's voice (green) instead of a flat line
+            const sample = rabbitSpeaking
+              ? { time: this.elapsedSecondsFloat, amp: RecordingTimer.rabbitVoiceLevel(this.elapsedSecondsFloat), ai: true }
+              : { time: this.elapsedSecondsFloat, amp: this.getAudioAmplitude() };
+            this.waveformHistory.push(sample);
             this.lastSampleTime = currentTime;
           }
         }
@@ -215,7 +291,8 @@ class RecordingTimer {
           const amp = item.amp || 0;
           const barH = Math.max(1.5 * dpr, amp * (waveformAreaHeight * 0.75));
 
-          this.ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+          // Your voice in white, Rabbit's voice in the primary green
+          this.ctx.fillStyle = item.ai ? '#56D364' : 'rgba(255, 255, 255, 0.85)';
           this.ctx.fillRect(x - (barWidth / 2), centerY - (barH / 2), barWidth, barH);
         }
       }
@@ -517,6 +594,25 @@ class RecordingTimer {
     } catch (e) {
       console.warn('Could not build waveform from recording:', e);
       return false;
+    }
+  }
+
+  /**
+   * Replay: mark the bars between fromT and toT (seconds) as Rabbit's voice.
+   * The replay waveform has one bar every 0.0632 s (see loadWaveformFromBlob).
+   */
+  markRabbitVoice(fromT, toT) {
+    const history = this.waveformHistory;
+    if (!history.length || !(toT > fromT) || toT - fromT > 1) return;
+    const step = 0.0632;
+    const start = Math.max(0, Math.floor(fromT / step));
+    const end = Math.min(history.length - 1, Math.floor(toT / step));
+    for (let i = start; i <= end; i++) {
+      const item = history[i];
+      if (!item || item.ai) continue;
+      // Keep the louder of the recording and Rabbit's voice
+      item.amp = Math.max(item.amp || 0, RecordingTimer.rabbitVoiceLevel(item.time));
+      item.ai = true;
     }
   }
 
