@@ -1263,22 +1263,8 @@
     return String(text || '').replace(/^\s*[-•*]\s+/gm, '').replace(/[`#*_]/g, '').replace(/\s+/g, ' ').trim();
   }
 
+  // Replay highlight: green border on the card being spoken (no caption)
   function showReplayCaption(event) {
-    let el = getEl('agile-replay-caption');
-    const frame = document.querySelector('.agile-right-canvas-frame');
-    if (!el && frame) {
-      el = document.createElement('div');
-      el.id = 'agile-replay-caption';
-      el.className = 'agile-replay-caption';
-      frame.appendChild(el);
-    }
-    if (!el) return;
-    const who = event.type === 'ai' ? 'Rabbit' : (event.via === 'voice' ? 'You said' : 'You typed');
-    el.innerHTML = `<span class="agile-replay-caption__who">${who}</span><span class="agile-replay-caption__text"></span>`;
-    el.querySelector('.agile-replay-caption__text').textContent = speechTextFor(event.text);
-    el.classList.add('is-visible');
-    el.classList.toggle('is-ai', event.type === 'ai');
-
     document.querySelectorAll('.agile-spatial-chat-node.is-replaying').forEach(n => n.classList.remove('is-replaying'));
     const card = event.cardId != null ? getEl(`spatial-card-${event.cardId}`) : null;
     if (card) card.classList.add('is-replaying');
@@ -1290,8 +1276,6 @@
 
   function hideReplayCaption() {
     clearTimeout(replay.captionTimer);
-    const el = getEl('agile-replay-caption');
-    if (el) el.classList.remove('is-visible');
     document.querySelectorAll('.agile-spatial-chat-node.is-replaying').forEach(n => n.classList.remove('is-replaying'));
   }
 
@@ -3226,34 +3210,60 @@
     }
 
     function drawWaveform(analyser, wave) {
+      // Scrolling level meter: one bar per ~70 ms, newest on the right.
+      // Loudness is smoothed (fast rise, slow fall) and quiet room noise is
+      // ignored, so the bars follow your voice calmly instead of flickering.
       const ctx2 = wave.getContext('2d');
-      const data = new Uint8Array(analyser.frequencyBinCount);
+      const data = new Float32Array(analyser.fftSize);
       const dpr = window.devicePixelRatio || 1;
+      const BAR_W = 3, GAP = 3, SAMPLE_MS = 70;
+      const NOISE_GATE = 0.012;
+      const levels = [];
+      let smooth = 0;
+      let lastSample = 0;
 
-      const draw = () => {
+      const readLevel = () => {
+        analyser.getFloatTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+        const rms = Math.sqrt(sum / data.length);
+        if (rms < NOISE_GATE) return 0;
+        const db = 20 * Math.log10(rms);
+        return Math.min(1, Math.max(0, (db + 40) / 32));
+      };
+
+      const draw = (now) => {
         if (!voice.listening) return;
         const w = wave.clientWidth, h = wave.clientHeight;
-        if (wave.width !== w * dpr) { wave.width = w * dpr; wave.height = h * dpr; }
-        analyser.getByteTimeDomainData(data);
+        if (wave.width !== Math.round(w * dpr)) { wave.width = Math.round(w * dpr); wave.height = Math.round(h * dpr); }
+
+        if (!lastSample || now - lastSample >= SAMPLE_MS) {
+          const target = readLevel();
+          smooth = target > smooth ? smooth + (target - smooth) * 0.6 : smooth + (target - smooth) * 0.25;
+          levels.push(smooth);
+          const maxBars = Math.ceil(w / (BAR_W + GAP)) + 1;
+          if (levels.length > maxBars) levels.splice(0, levels.length - maxBars);
+          lastSample = now;
+        }
+
         ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx2.clearRect(0, 0, w, h);
-
-        // Simple bar waveform: 2px bars, 2px gap, height from loudness
-        const bars = Math.floor(w / 4);
-        const step = Math.max(1, Math.floor(data.length / bars));
-        ctx2.fillStyle = '#111111';
-        for (let i = 0; i < bars; i++) {
-          let peak = 0;
-          for (let j = 0; j < step; j++) {
-            const v = Math.abs(data[i * step + j] - 128) / 128;
-            if (v > peak) peak = v;
+        ctx2.fillStyle = '#56D364';
+        for (let i = 0; i < levels.length; i++) {
+          const x = w - (levels.length - i) * (BAR_W + GAP);
+          const barH = Math.max(2, levels[i] * h);
+          const y = (h - barH) / 2;
+          if (ctx2.roundRect) {
+            ctx2.beginPath();
+            ctx2.roundRect(x, y, BAR_W, barH, BAR_W / 2);
+            ctx2.fill();
+          } else {
+            ctx2.fillRect(x, y, BAR_W, barH);
           }
-          const barH = Math.max(2, Math.min(h, peak * h * 2.2));
-          ctx2.fillRect(i * 4, (h - barH) / 2, 2, barH);
         }
         voice.waveRaf = requestAnimationFrame(draw);
       };
-      draw();
+      voice.waveRaf = requestAnimationFrame(draw);
     }
 
     async function startListening() {

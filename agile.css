@@ -2052,8 +2052,8 @@
    VOICE INPUT (mic button + live waveform) & READ-ALOUD TOGGLE
    ═══════════════════════════════════════════════════════════════════════════ */
 .agile-prompt-send-btn.is-listening {
-  background-color: #111111;
-  color: #ffffff;
+  background-color: #56D364;
+  color: #000000;
   animation: agileMicPulse 1.4s ease-in-out infinite;
 }
 
@@ -2065,7 +2065,7 @@
 .agile-voice-wave {
   display: none;
   flex: 1;
-  height: 28px;
+  height: 26px;
   min-width: 0;
   margin: 0 8px;
 }
@@ -2123,44 +2123,7 @@
   50% { opacity: 0; }
 }
 
-/* ── Session replay: caption + highlighted card ── */
-.agile-replay-caption {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translate(-50%, -8px);
-  max-width: min(640px, calc(100% - 32px));
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: #111111;
-  color: #ffffff;
-  font-size: 14px;
-  line-height: 1.45;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 50;
-  transition: opacity 0.25s ease, transform 0.25s ease;
-}
-
-.agile-replay-caption.is-visible {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-
-.agile-replay-caption__who {
-  flex-shrink: 0;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.agile-replay-caption.is-ai .agile-replay-caption__who {
-  color: #56D364;
-}
-
+/* ── Session replay: highlighted card while it is spoken ── */
 .agile-spatial-chat-node.is-replaying {
   outline: 2px solid #56D364;
   outline-offset: 10px;
