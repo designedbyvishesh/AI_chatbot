@@ -212,8 +212,8 @@ class RecordingTimer {
         const x = rightX - (this.elapsedSecondsFloat - item.time) * pixelsPerSecond;
 
         if (x >= -20 * dpr && x <= rightX + 10 * dpr) {
-          const amp = item.amp || 0.04;
-          const barH = Math.max(4 * dpr, amp * (waveformAreaHeight * 0.75));
+          const amp = item.amp || 0;
+          const barH = Math.max(1.5 * dpr, amp * (waveformAreaHeight * 0.75));
 
           this.ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
           this.ctx.fillRect(x - (barWidth / 2), centerY - (barH / 2), barWidth, barH);
@@ -279,19 +279,28 @@ class RecordingTimer {
    * Audio Amplitude Extractor
    */
   getAudioAmplitude() {
-    if (this.analyser && !this.useSyntheticAudio) {
-      const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
-      this.analyser.getByteFrequencyData(dataArray);
-      let sum = 0;
-      for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-      const avg = sum / dataArray.length;
-      return Math.min(1.0, Math.max(0.06, avg / 128));
-    } else {
-      const t = Date.now() * 0.005;
-      const base = Math.sin(t * 1.5) * 0.3 + Math.cos(t * 3.1) * 0.2;
-      const noise = (Math.random() - 0.5) * 0.15;
-      return Math.min(0.9, Math.max(0.06, Math.abs(base + noise)));
-    }
+    // No microphone: draw a flat line instead of fake movement
+    if (!this.analyser || this.useSyntheticAudio) return 0;
+
+    // Loudness (RMS) of what is actually being recorded right now
+    const data = new Float32Array(this.analyser.fftSize);
+    this.analyser.getFloatTimeDomainData(data);
+    let sumSquares = 0;
+    for (let i = 0; i < data.length; i++) sumSquares += data[i] * data[i];
+    const rms = Math.sqrt(sumSquares / data.length);
+    return RecordingTimer.levelFromRms(rms);
+  }
+
+  /**
+   * Maps RMS loudness to a 0..1 bar height. Quiet room noise (below the gate)
+   * is drawn as silence so the waveform only moves when someone speaks.
+   */
+  static levelFromRms(rms) {
+    const NOISE_GATE = 0.012;
+    if (rms < NOISE_GATE) return 0;
+    // Perceptual (log) scale: normal speech ~0.05-0.2 RMS fills most of the height
+    const db = 20 * Math.log10(rms);           // about -38 dB (gate) .. 0 dB
+    return Math.min(1, Math.max(0, (db + 40) / 32));
   }
 
   /**
@@ -303,15 +312,36 @@ class RecordingTimer {
         throw new Error('MediaDevices not supported');
       }
 
-      this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Browser clean-up of the mic signal: removes echo from the speakers,
+      // steady background noise and evens out the volume
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1
+        }
+      });
       this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const source = this.audioCtx.createMediaStreamSource(this.mediaStream);
+
+      // mic -> gain -> (recorder + waveform). The gain is turned down while
+      // Rabbit reads aloud so its voice leaking from the speakers is not
+      // recorded; Rabbit's answers are spoken cleanly again on replay.
+      this.inputGain = this.audioCtx.createGain();
+      this.inputGain.gain.value = 1;
+      this.recordDestination = this.audioCtx.createMediaStreamDestination();
       this.analyser = this.audioCtx.createAnalyser();
-      this.analyser.fftSize = 128;
-      source.connect(this.analyser);
+      this.analyser.fftSize = 1024;
+      source.connect(this.inputGain);
+      this.inputGain.connect(this.recordDestination);
+      this.inputGain.connect(this.analyser);
+      if (this.inputMuted) this.inputGain.gain.value = 0;
 
       this.audioChunks = [];
-      this.mediaRecorder = new MediaRecorder(this.mediaStream);
+      const mimeType = (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm;codecs=opus'))
+        ? 'audio/webm;codecs=opus' : '';
+      this.mediaRecorder = new MediaRecorder(this.recordDestination.stream, mimeType ? { mimeType, audioBitsPerSecond: 64000 } : undefined);
       this.mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) this.audioChunks.push(e.data);
       };
@@ -336,6 +366,18 @@ class RecordingTimer {
     if (this.audioCtx && this.audioCtx.state !== 'closed') {
       this.audioCtx.close();
     }
+  }
+
+  /**
+   * Silence (or restore) the microphone in the recording, smoothly.
+   * Used while Rabbit reads an answer aloud during a live session.
+   */
+  setInputMuted(muted) {
+    this.inputMuted = !!muted;
+    if (!this.inputGain || !this.audioCtx) return;
+    const now = this.audioCtx.currentTime;
+    this.inputGain.gain.cancelScheduledValues(now);
+    this.inputGain.gain.setTargetAtTime(muted ? 0 : 1, now, muted ? 0.02 : 0.08);
   }
 
   /**
@@ -430,12 +472,46 @@ class RecordingTimer {
     this.elapsedSecondsFloat = 0;
     this.elapsedSeconds = 0;
     this.remainingSeconds = Math.round(this.recordingDuration);
-    this.generateHistoryWaveform(Math.max(60, Math.ceil(this.recordingDuration)));
+    this.waveformHistory = [];
     if (this.dom && this.dom.recordBtn) {
       this.dom.recordBtn.classList.remove('is-disabled');
       this.dom.recordBtn.classList.add('is-paused');
     }
     this.updateTimerDisplay();
+  }
+
+  /**
+   * Build the replay waveform from the real recorded audio (instead of a
+   * made-up pattern), one bar every 0.0632 s like the live view.
+   */
+  async loadWaveformFromBlob(blob) {
+    try {
+      const ctx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 1, 44100);
+      const buffer = await ctx.decodeAudioData(await blob.arrayBuffer());
+      const data = buffer.getChannelData(0);
+      const step = 0.0632;
+      const samplesPerBar = Math.max(1, Math.floor(buffer.sampleRate * step));
+      const history = [];
+      for (let i = 0, t = 0; i < data.length; i += samplesPerBar, t += step) {
+        let sumSquares = 0;
+        const end = Math.min(data.length, i + samplesPerBar);
+        for (let j = i; j < end; j++) sumSquares += data[j] * data[j];
+        const rms = Math.sqrt(sumSquares / (end - i));
+        history.push({ time: t, amp: RecordingTimer.levelFromRms(rms) });
+      }
+      this.waveformHistory = history;
+      if (buffer.duration && isFinite(buffer.duration)) {
+        this.recordingDuration = buffer.duration;
+        if (!this.realAudioPlaying) {
+          this.remainingSeconds = Math.max(0, Math.round(buffer.duration - this.elapsedSecondsFloat));
+          this.updateTimerDisplay();
+        }
+      }
+      return true;
+    } catch (e) {
+      console.warn('Could not build waveform from recording:', e);
+      return false;
+    }
   }
 
   getPlaybackDuration() {
@@ -496,6 +572,8 @@ class RecordingTimer {
   pauseRealAudio() {
     this.isHistoryMode = true;
     this.realAudioPlaying = false;
+    // Without this the waveform kept scrolling (with made-up bars) after playback stopped
+    if (this.state === 'recording') this.state = 'paused';
     this.dom.recordBtn.classList.add('is-paused');
     this.dom.outerRing.classList.remove('is-rotating');
     if (this.audioElement) this.audioElement.pause();
@@ -571,7 +649,8 @@ class RecordingTimer {
 
   showSkipControls() {
     this.isHistoryMode = true;
-    if (this.waveformHistory.length === 0) {
+    // Placeholder pattern only for old sessions that have no real recording
+    if (this.waveformHistory.length === 0 && !this.audioUrl) {
       this.generateHistoryWaveform(2700);
       this.elapsedSecondsFloat = 54;
       this.elapsedSeconds = 54;

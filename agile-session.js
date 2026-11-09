@@ -1156,6 +1156,23 @@
   }
   window.AgileLogRecordingEvent = logRecordingEvent;
 
+  // While Rabbit reads an answer aloud in a live session, its voice comes out of
+  // the speakers and leaks into the mic as a quiet, noisy copy. Mute the mic in
+  // the recording during that time (plus a short tail for room echo); replay
+  // speaks the answer again cleanly at the same moment.
+  (function watchReadAloudForRecording() {
+    if (!('speechSynthesis' in window)) return;
+    let mutedUntil = 0;
+    setInterval(() => {
+      const recorder = window.AgileRecorderInstance;
+      if (!recorder || !recorder.setInputMuted || recorder.isHistoryMode || sessionState.mode === 'history') return;
+      const now = Date.now();
+      if (window.speechSynthesis.speaking) mutedUntil = now + 350;
+      const shouldMute = now < mutedUntil;
+      if (shouldMute !== !!recorder.inputMuted) recorder.setInputMuted(shouldMute);
+    }, 100);
+  })();
+
   const RECORDING_DB = 'rabbit-agile-recordings';
   function openRecordingDb() {
     return new Promise((resolve, reject) => {
@@ -1204,6 +1221,8 @@
 
   function stopReplay() {
     replay.token++;
+    const audio = window.AgileRecorderInstance && window.AgileRecorderInstance.audioElement;
+    if (audio) audio.volume = 1;
     replay.events = [];
     replay.lastT = 0;
     replay.playing = false;
@@ -1220,8 +1239,9 @@
     replay.lastT = 0;
 
     let url = null;
+    let blob = null;
     if (session.hasRecording) {
-      const blob = await loadRecordingBlob(session.id);
+      blob = await loadRecordingBlob(session.id);
       if (token !== replay.token) return; // user opened another session meanwhile
       if (blob) { url = URL.createObjectURL(blob); replay.objectUrl = url; }
     } else if (typeof session.audioUrl === 'string' && session.audioUrl.startsWith('data:audio')) {
@@ -1231,6 +1251,11 @@
     const recorder = window.AgileRecorderInstance;
     if (url && recorder && recorder.loadRecording) {
       recorder.loadRecording(url, session.recordingDuration || 0);
+      // Real waveform of the recording (moves only where someone actually spoke)
+      if (recorder.loadWaveformFromBlob) {
+        if (!blob) { try { blob = await (await fetch(url)).blob(); } catch (e) {} }
+        if (blob && token === replay.token) recorder.loadWaveformFromBlob(blob);
+      }
     }
   }
 
@@ -1277,6 +1302,13 @@
       const utter = new SpeechSynthesisUtterance(speechTextFor(event.text));
       utter.lang = navigator.language || 'en-US';
       utter.rate = 1.05;
+      utter.volume = 1;
+      const audio = window.AgileRecorderInstance && window.AgileRecorderInstance.audioElement;
+      // Lower the recording under Rabbit's voice so it is clear, then restore
+      const restore = () => { if (audio && !window.speechSynthesis.speaking) audio.volume = 1; };
+      utter.onstart = () => { if (audio) audio.volume = 0.35; };
+      utter.onend = () => setTimeout(restore, 50);
+      utter.onerror = () => setTimeout(restore, 50);
       window.speechSynthesis.speak(utter);
     }
   }
