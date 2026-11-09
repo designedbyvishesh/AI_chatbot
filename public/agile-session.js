@@ -332,14 +332,15 @@
     const listContainer = getEl('agile-homepage-session-list');
     if (!listContainer) return;
 
-    if (!sessionState.pastSessions || sessionState.pastSessions.length === 0) {
-      listContainer.innerHTML = `
-        <div class="rabbit-empty">
-          <img src="assets/hidden_Bunny_SVG.svg" alt="" class="rabbit-empty__bunny" />
-          <div class="rabbit-empty__title">No sessions yet</div>
-          <div class="rabbit-empty__text">Start your first challenge above. Every session you save shows up here.</div>
-        </div>
-      `;
+    // First visit: no Past session section at all, and the challenge sits in the middle
+    const isFirstVisit = !sessionState.pastSessions || sessionState.pastSessions.length === 0;
+    const content = listContainer.closest('.agile-home-right-content');
+    if (content) content.classList.toggle('is-first-visit', isFirstVisit);
+    const heading = getEl('agile-past-sessions-heading');
+    if (heading) heading.hidden = isFirstVisit;
+    listContainer.hidden = isFirstVisit;
+    if (isFirstVisit) {
+      listContainer.innerHTML = '';
       return;
     }
 

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="Interactive Design System & UX Architecture AI Tutor - Master interaction patterns, information hierarchy, modals, tabs, and micro-animations with real-time generative feedback." />
+  <title>Interaction & Design System AI Tutor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Text&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet" />
+  <link rel="stylesheet" href="tokens.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="agile.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <script src="auth-boot.js"></script>
+</head>
+
+<body>
+  <div class="app-shell" id="app-shell">
+    <!-- ═══════ TOP BAR ═══════ -->
+    <header class="topbar" id="topbar">
+      <div class="topbar__left">
+        <div class="topbar__logo" id="logo" title="Design System AI Engine">
+          <img src="assets/Logo_Black_BG.svg" alt="Logo" class="topbar__logo-img topbar__logo-img--dark" width="32"
+            height="32" />
+          <img src="assets/Logo_White_BG.svg" alt="Logo" class="topbar__logo-img topbar__logo-img--light" width="32"
+            height="32" />
+        </div>
+        <button class="topbar__icon-btn" id="menu-btn" aria-label="Open sidebar" title="Chat History & Topics">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <!-- ═══ Mode Switcher (Quiz / Agile) ═══ -->
+        <div class="mode-switcher" id="mode-switcher" data-active-mode="quiz" title="Switch between Quiz & Agile modes">
+          <div class="mode-switcher__slider"></div>
+          <button class="mode-switcher__item mode-switcher__item--quiz" id="mode-opt-quiz" data-mode="quiz"
+            aria-label="Switch to Quiz mode">
+            <span class="mode-switcher__item-icon">
+              <span class="material-symbols-outlined">quiz</span>
+            </span>
+            <span class="mode-switcher__item-text">Quiz</span>
+          </button>
+          <button class="mode-switcher__item mode-switcher__item--agile" id="mode-opt-agile" data-mode="agile"
+            aria-label="Switch to Agile mode">
+            <span class="mode-switcher__item-icon">
+              <span class="material-symbols-outlined">bolt</span>
+            </span>
+            <span class="mode-switcher__item-text">Agile</span>
+          </button>
+        </div>
+      </div>
+      <div class="topbar__right">
+        <span class="topbar__time" id="current-time">07:00 AM</span>
+        <button class="topbar__icon-btn" id="more-btn" aria-label="More options" title="Page Options">
+          <span class="material-symbols-outlined">more_horiz</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ═══════ OVERLAY BACKDROP ═══════ -->
+    <div class="overlay" id="overlay" aria-hidden="true"></div>
+
+    <!-- ═══════ LEFT SIDEBAR ═══════ -->
+    <aside class="sidebar" id="sidebar" aria-label="Chat sidebar">
+      <!-- Header -->
+      <div class="sidebar__header">
+        <div class="sidebar__logo">
+          <svg width="31" height="27" viewBox="0 0 31 27" fill="none">
+            <rect x="2" y="4" width="9" height="19" rx="2" fill="#4CAF50" />
+            <rect x="13" y="8" width="7" height="14" rx="2" fill="#66BB6A" />
+            <rect x="22" y="2" width="7" height="21" rx="2" fill="#81C784" />
+          </svg>
+        </div>
+        <button class="sidebar__close-btn" id="sidebar-close-btn" aria-label="Close sidebar">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="sidebar__tabs">
+        <button class="sidebar__tab sidebar__tab--active" id="tab-all-chats">All Modules</button>
+        <button class="sidebar__tab" id="tab-favorites">
+          <span class="material-symbols-outlined sidebar__tab-icon">kid_star</span>
+          <span>Starred</span>
+        </button>
+      </div>
+
+      <!-- New Chat -->
+      <div class="sidebar__action-row">
+        <button class="sidebar__action-btn" id="sidebar-new-chat">
+          <span class="material-symbols-outlined">add</span>
+          <span>New design challenge</span>
+        </button>
+      </div>
+
+      <!-- Search -->
+      <div class="sidebar__action-row">
+        <button class="sidebar__action-btn" id="sidebar-search">
+          <span class="material-symbols-outlined">search</span>
+          <span>Search UX patterns</span>
+        </button>
+      </div>
+
+      <!-- Chat History / Modules -->
+      <div class="sidebar__history" id="sidebar-history">
+        <!-- Live User Saved History (Connected to MongoDB) -->
+        <div class="sidebar__history-section" id="user-history-section">
+          <div class="sidebar__section-header">
+            <span class="material-symbols-outlined sidebar__section-icon">history</span>
+            <span class="sidebar__section-title">Your Recent Chats</span>
+          </div>
+          <div class="sidebar__session-list" id="user-session-list">
+            <!-- Dynamically populated from MongoDB and localStorage -->
+          </div>
+        </div>
+
+        <!-- Curated Design Challenges -->
+        <div class="sidebar__history-section">
+          <div class="sidebar__section-header">
+            <span class="material-symbols-outlined sidebar__section-icon">expand_more</span>
+            <span class="sidebar__section-title">Design Challenges</span>
+          </div>
+
+          <button class="sidebar__chat-item"
+            data-prompt="Quiz me on when to use Modals vs Drawers vs Popovers in web apps">
+            <div class="sidebar__chat-icon">
+              <span class="material-symbols-outlined">quiz</span>
+            </div>
+            <div class="sidebar__chat-info">
+              <span class="sidebar__chat-title">Modals vs Drawers vs Popovers</span>
+              <div class="sidebar__chat-meta">
+                <span class="sidebar__chat-date">Interaction Quiz</span>
+                <span class="sidebar__chat-sep">·</span>
+                <span class="sidebar__chat-model">UX Master</span>
+              </div>
+            </div>
+          </button>
+
+          <button class="sidebar__chat-item"
+            data-prompt="Give me a 4-level information hierarchy challenge: Tab -> Filters -> Folders -> Files">
+            <div class="sidebar__chat-icon">
+              <span class="material-symbols-outlined">account_tree</span>
+            </div>
+            <div class="sidebar__chat-info">
+              <span class="sidebar__chat-title">Multi-level Hierarchy Builder</span>
+              <div class="sidebar__chat-meta">
+                <span class="sidebar__chat-date">Flow Builder</span>
+                <span class="sidebar__chat-sep">·</span>
+                <span class="sidebar__chat-model">IA Engine</span>
+              </div>
+            </div>
+          </button>
+
+          <button class="sidebar__chat-item" data-prompt="When should I use Tabs vs Segmented Controls vs Accordions?">
+            <div class="sidebar__chat-icon">
+              <span class="material-symbols-outlined">tab</span>
+            </div>
+            <div class="sidebar__chat-info">
+              <span class="sidebar__chat-title">Tabs vs Segmented Controls</span>
+              <div class="sidebar__chat-meta">
+                <span class="sidebar__chat-date">Design System</span>
+                <span class="sidebar__chat-sep">·</span>
+                <span class="sidebar__chat-model">UX Master</span>
+              </div>
+            </div>
+            <span class="material-symbols-outlined sidebar__chat-star">kid_star</span>
+          </button>
+
+          <button class="sidebar__chat-item"
+            data-prompt="What animation easing curves are best for micro-interactions vs page transitions?">
+            <div class="sidebar__chat-icon">
+              <span class="material-symbols-outlined">animation</span>
+            </div>
+            <div class="sidebar__chat-info">
+              <span class="sidebar__chat-title">Micro-Animations & Easing Heuristics</span>
+              <div class="sidebar__chat-meta">
+                <span class="sidebar__chat-date">Motion Design</span>
+                <span class="sidebar__chat-sep">·</span>
+                <span class="sidebar__chat-model">UX Master</span>
+              </div>
+            </div>
+          </button>
+
+          <button class="sidebar__chat-item"
+            data-prompt="When to use determinate progress bars vs skeleton loaders vs spinning indicators?">
+            <div class="sidebar__chat-icon">
+              <span class="material-symbols-outlined">hourglass_top</span>
+            </div>
+            <div class="sidebar__chat-info">
+              <span class="sidebar__chat-title">Indicators & Perceived Latency</span>
+              <div class="sidebar__chat-meta">
+                <span class="sidebar__chat-date">Feedback Patterns</span>
+                <span class="sidebar__chat-sep">·</span>
+                <span class="sidebar__chat-model">UX Master</span>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ═══════ RIGHT DROPDOWN MENU ═══════ -->
+    <div class="dropdown-menu" id="dropdown-menu" aria-label="Options menu">
+      <button class="dropdown-menu__item" id="dropdown-duplicate">
+        <span class="material-symbols-outlined">content_copy</span>
+        <span>Duplicate session</span>
+      </button>
+      <button class="dropdown-menu__item" id="dropdown-ai-settings">
+        <span class="material-symbols-outlined">smart_toy</span>
+        <span>AI Engine & API Keys</span>
+      </button>
+
+      <div class="dropdown-menu__divider"></div>
+
+      <button class="dropdown-menu__item dropdown-menu__item--toggle" id="dropdown-small-text">
+        <span class="material-symbols-outlined">lowercase</span>
+        <span>Small text</span>
+        <span class="material-symbols-outlined dropdown-menu__toggle">toggle_off</span>
+      </button>
+      <button class="dropdown-menu__item dropdown-menu__item--toggle" id="dropdown-full-width">
+        <span class="material-symbols-outlined">fit_screen</span>
+        <span>Full width</span>
+        <span class="material-symbols-outlined dropdown-menu__toggle">toggle_off</span>
+      </button>
+      <button class="dropdown-menu__item" id="dropdown-customize">
+        <span class="material-symbols-outlined">discover_tune</span>
+        <span>Configure parameters</span>
+      </button>
+
+      <div class="dropdown-menu__divider"></div>
+
+      <button class="dropdown-menu__item dropdown-menu__item--toggle" id="dropdown-time">
+        <span class="material-symbols-outlined">nest_clock_farsight_analog</span>
+        <span>Time</span>
+        <span class="material-symbols-outlined dropdown-menu__toggle dropdown-menu__toggle--on">toggle_on</span>
+      </button>
+      <button class="dropdown-menu__item" id="dropdown-shortcuts">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span>View Shortcuts</span>
+      </button>
+    </div>
+
+    <!-- ═══════ AI PROVIDER SETTINGS MODAL ═══════ -->
+    <div class="settings-modal" id="settings-modal" aria-hidden="true">
+      <div class="settings-modal__dialog">
+        <div class="settings-modal__header">
+          <div class="settings-modal__title-group">
+            <span class="material-symbols-outlined settings-modal__icon">bolt</span>
+            <h2 class="settings-modal__title">AI Engine & Unlimited Tokens Setup</h2>
+          </div>
+          <button class="settings-modal__close" id="settings-modal-close" aria-label="Close modal">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div class="settings-modal__body">
+          <p class="settings-modal__desc">
+            Choose your AI execution mode. <strong>Groq AI</strong> uses the server-side Llama 3.3 70B model for
+            intelligent, multi-turn design mentorship. The <strong>Built-in Engine</strong> works offline with pre-built
+            quizzes.
+          </p>
+
+          <div class="settings-provider-group">
+            <label class="settings-provider-card" id="card-mode-groq">
+              <input type="radio" name="ai-engine-mode" value="groq" checked />
+              <div class="settings-provider-card__content">
+                <div class="settings-provider-card__title-row">
+                  <span class="settings-provider-name">Groq AI (Llama 3.3 70B)</span>
+                  <span class="settings-badge settings-badge--green">Recommended</span>
+                </div>
+                <p class="settings-provider-detail">
+                  Multi-turn conversational design mentor powered by Groq LPU. Asks scenario-based questions,
+                  evaluates your answers, and cites real design references. API key is configured server-side.
+                </p>
+              </div>
+            </label>
+
+            <label class="settings-provider-card" id="card-mode-builtin">
+              <input type="radio" name="ai-engine-mode" value="builtin" />
+              <div class="settings-provider-card__content">
+                <div class="settings-provider-card__title-row">
+                  <span class="settings-provider-name">Built-in UX Master Engine</span>
+                  <span class="settings-badge">Offline / Instant</span>
+                </div>
+                <p class="settings-provider-detail">
+                  Zero setup, offline capable. Includes pre-built interactive quizzes and flow evaluation.
+                  No AI-generated questions — uses hardcoded design challenges.
+                </p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-modal__footer">
+          <button class="settings-btn settings-btn--secondary" id="settings-cancel-btn">Cancel</button>
+          <button class="settings-btn settings-btn--primary" id="settings-save-btn">Save Engine Preferences</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ MAIN WORKSPACE AREA ═══════ -->
+    <main class="agile-workspace" id="agile-workspace">
+      <!-- Dark Wallpaper Ambient Background -->
+      <div class="agile-wallpaper-bg" aria-hidden="true"></div>
+
+      <!-- ═══════ MAIN CONTENT (2-Column Agile Frame Layout) ═══════ -->
+      <div class="agile-homepage-container" id="quiz-homepage-container">
+        <!-- ─── LEFT SIDEBAR PANEL (Growth, Stats & Feedback) ─── -->
+        <aside class="agile-home-left-panel">
+          <!-- Header Greeting -->
+          <div class="agile-home-greeting">
+            <span>👋</span> <span data-rabbit-greeting>Hi there</span>
+          </div>
+          <h2 class="agile-home-title">See your growth...</h2>
+
+          <!-- Stats Grid (Total session, Lowest time, Streak card) -->
+          <div class="agile-stats-grid">
+            <div class="agile-stats-left">
+              <div class="agile-stat-card agile-stat-card--total">
+                <div class="agile-stat-val" id="stat-total-sessions">12</div>
+                <div class="agile-stat-lbl">Total session</div>
+              </div>
+              <div class="agile-stat-card agile-stat-card--lowest">
+                <div class="agile-stat-val-sub" id="stat-lowest-times">
+                  <span style="font-size: 20px; font-weight: 600; color: #fff;">4m 12s</span> <span style="font-size: 12px; color: rgba(255,255,255,0.6);">avg time</span>
+                </div>
+                <div class="agile-stat-lbl">This week</div>
+              </div>
+            </div>
+
+            <!-- Streak Activity Matrix Card -->
+            <div class="agile-streak-card">
+              <div class="agile-streak-header">
+                <span class="agile-streak-title">Total session</span>
+                <span class="agile-streak-longest" id="stat-longest-streak">largest streak - 3 days</span>
+              </div>
+              <div class="agile-streak-calendar">
+                <div class="agile-streak-months" id="agile-streak-months">
+                  <span>Sep</span>
+                  <span>Oct</span>
+                  <span>Nov</span>
+                  <span>Dec</span>
+                </div>
+                <div class="agile-streak-body">
+                  <div class="agile-streak-days">
+                    <span>Mon</span>
+                    <span>Wed</span>
+                    <span>Fri</span>
+                  </div>
+                  <div class="agile-streak-blocks-matrix" id="agile-streak-matrix">
+                    <!-- Dynamically populated by JS -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Extreme Feedback Card -->
+          <div class="agile-home-feedback-wrapper">
+            <div class="agile-home-feedback-card">
+              <span class="agile-feedback-text">Share your feedback</span>
+              <span class="agile-feedback-status">Not available</span>
+            </div>
+          </div>
+        </aside>
+
+        <!-- ─── RIGHT MAIN FRAME (#191919 Frame Background) ─── -->
+        <main class="agile-home-right-frame" id="quiz-right-frame">
+          <div class="agile-home-right-content">
+            <!-- Tasks / Starter Modules Section (Page 1) -->
+            <section class="tasks-section" id="tasks-section">
+              <h2 class="agile-sessions-heading">Design System Challenges</h2>
+
+              <div class="tasks-list-wrapper" id="tasks-list-wrapper">
+                <div class="tasks-list" id="tasks-list">
+                  <div class="task-item task-item--completed" id="task-1"
+                    data-prompt="Quiz me on when to use Modals vs Drawers vs Popovers">
+                    <div class="task-item__checkbox task-item__checkbox--done">
+                      <span class="material-symbols-outlined">check</span>
+                    </div>
+                    <span class="task-item__label">Mastering Modals vs Drawers vs Popovers</span>
+                  </div>
+                  <div class="task-item" id="task-2"
+                    data-prompt="Give me a 4-level information hierarchy challenge: Tab -> Filters -> Folders -> Files">
+                    <div class="task-item__checkbox"></div>
+                    <span class="task-item__label">Information Architecture: 4-Level Flow Builder</span>
+                  </div>
+                  <div class="task-item" id="task-3"
+                    data-prompt="When should I use Tabs vs Segmented Controls vs Accordions?">
+                    <div class="task-item__checkbox"></div>
+                    <span class="task-item__label">Tabs vs Segmented Controls vs Accordions</span>
+                  </div>
+                  <div class="task-item" id="task-4"
+                    data-prompt="When to use determinate progress bars vs skeleton loaders vs spinning indicators?">
+                    <div class="task-item__checkbox"></div>
+                    <span class="task-item__label">Feedback Indicators: Skeletons vs Spinners</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Suggestions -->
+              <div class="suggestions" id="suggestions">
+                <p class="suggestions__title">Suggested Design Topics</p>
+                <div class="suggestions__chips" id="suggestion-chips">
+                  <button class="chip" id="chip-hierarchy"
+                    data-prompt="Give me a 4-level information hierarchy challenge: Tab -> Filters -> Folders -> Files">
+                    <span class="material-symbols-outlined chip__icon">account_tree</span>
+                    <span class="chip__label">Hierarchy Flow</span>
+                  </button>
+                  <button class="chip" id="chip-modal" data-prompt="Quiz me on when to use Modals vs Drawers vs Popovers">
+                    <span class="material-symbols-outlined chip__icon">web_asset</span>
+                    <span class="chip__label">Modal vs Drawer</span>
+                  </button>
+                  <button class="chip" id="chip-tabs" data-prompt="When to use Tabs vs Segmented Controls?">
+                    <span class="material-symbols-outlined chip__icon">tab</span>
+                    <span class="chip__label">Tabs & Switches</span>
+                  </button>
+                  <button class="chip" id="chip-animation"
+                    data-prompt="What animation easing curves are best for micro-interactions?">
+                    <span class="material-symbols-outlined chip__icon">animation</span>
+                    <span class="chip__label">Animations</span>
+                  </button>
+                  <button class="chip chip--text-only" id="chip-more"
+                    data-prompt="Give me a comprehensive MCQ test on Design System interaction rules">
+                    <span class="chip__label">More</span>
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <!-- ═══════ AI CHAT & ANALYZING VIEW ═══════ -->
+            <section class="chat-section" id="chat-section" style="display: none;">
+              <div class="chat-thread" id="chat-thread">
+                <!-- Dynamic message feed rendered here -->
+              </div>
+            </section>
+          </div>
+
+          <!-- ═══════ FLOATING CAPSULE INPUT BAR ═══════ -->
+          <div class="agile-prompt-wrapper" id="quiz-prompt-wrapper">
+            <div class="input-bar agile-prompt-bar" id="input-bar" style="background-color: #0F0F0F; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 9999px; padding: 8px 12px 8px 20px;">
+              <div class="input-bar__field-wrapper" style="width: 100%;">
+                <textarea class="input-bar__field" id="screener-input"
+                  placeholder="Ask Design AI... (e.g. 'Quiz me on Modals vs Drawers' or 'Build a 4-level navigation flow')"
+                  rows="1" style="background: transparent; border: none; color: #ffffff; outline: none; font-size: 15px; width: 100%; resize: none;"></textarea>
+              </div>
+              <div class="input-bar__actions-right" style="display: flex; align-items: center; gap: 8px;">
+                <div class="input-bar__progress" id="input-progress" style="display: none;">
+                  <span class="material-symbols-outlined input-bar__progress-spinner" style="color: #56D364;">progress_activity</span>
+                  <span class="input-bar__progress-text" id="progress-value" style="color: #56D364;">100%</span>
+                </div>
+                <button class="agile-prompt-send-btn" id="mic-btn" aria-label="Submit prompt" style="width: 36px; height: 36px; border-radius: 50%; background: #56D364; color: #000000; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;">
+                  <span class="material-symbols-outlined" id="mic-btn-icon" style="font-size: 18px;">send</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+  <script type="module" src="auth-guard.js"></script>
+</body>
+
+</html>
