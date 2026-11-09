@@ -16,7 +16,9 @@ const num = (v, fallback) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Numb
 const LIMITS = {
   apiPer15Min: num(process.env.RATE_LIMIT_API_PER_15_MIN, 300),
   aiPerMinute: num(process.env.RATE_LIMIT_AI_PER_MINUTE, 20),
-  aiPerDay: num(process.env.RATE_LIMIT_AI_PER_DAY, 150)
+  aiPerDay: num(process.env.RATE_LIMIT_AI_PER_DAY, 150),
+  // Whole site, so Groq's free daily allowance (about 1,000 requests) is never used up
+  aiSitePerDay: num(process.env.RATE_LIMIT_AI_SITE_PER_DAY, 900)
 };
 
 function securityHeaders() {
@@ -78,8 +80,18 @@ const aiDailyLimiter = rateLimit({
   handler: tooMany(`You've used today's ${LIMITS.aiPerDay} Rabbit answers. Your limit resets tomorrow.`)
 });
 
+// Runs after the per-person checks, so refused requests don't count toward the site total
+const aiSiteLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000,
+  limit: LIMITS.aiSitePerDay,
+  keyGenerator: () => 'site',
+  standardHeaders: false,
+  legacyHeaders: false,
+  handler: tooMany('Rabbit is very busy today. Please try again tomorrow.')
+});
+
 /** Only POST requests call the AI; reading topic lists etc. is not counted. */
 const onlyPost = (limiter) => (req, res, next) => (req.method === 'POST' ? limiter(req, res, next) : next());
-const aiLimiters = [onlyPost(aiBurstLimiter), onlyPost(aiDailyLimiter)];
+const aiLimiters = [onlyPost(aiBurstLimiter), onlyPost(aiDailyLimiter), onlyPost(aiSiteLimiter)];
 
 module.exports = { securityHeaders, corsPolicy, apiLimiter, aiLimiters, LIMITS };
