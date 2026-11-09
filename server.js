@@ -13,6 +13,7 @@ const agileSessionsRoutes = require('./server/routes/agile-sessions.routes');
 const flowsRoutes = require('./server/routes/flows.routes');
 const quizzesRoutes = require('./server/routes/quizzes.routes');
 const chatRoutes = require('./server/routes/chat.routes');
+const agileChallengeRoutes = require('./server/routes/agile-challenge.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -40,6 +41,7 @@ app.use('/api/agile-sessions', agileSessionsRoutes);
 app.use('/api/flows', flowsRoutes);
 app.use('/api/quizzes', quizzesRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/agile', agileChallengeRoutes);
 
 app.listen(PORT, () => {
   console.log(`Design AI Server running at http://localhost:${PORT}`);

@@ -715,6 +715,7 @@
     sessionState.mode = 'session';
     sessionState.activeSessionId = `agile-${Date.now()}`;
     sessionState.answers = { difficulty: 'Normal', category: 'Random', muteNotification: 'Yes', duration: '45 min' };
+    sessionState.challenge = null;
 
     // Lock canvas while mandatory questions are active
     sessionState.isCanvasLocked = true;
@@ -1046,25 +1047,83 @@
       }, 400);
     }
 
-    // 2. Instantiate Generated Challenge Prompt as FIRST Spatial Chat Node on 2D Infinite Canvas
-    const realTime = getFormattedISTTime();
-    const promptText = 'Design a mobile and kiosk ecosystem for travelers navigating severe flight disruptions (multi-hour delays, cancellations, and gate changes) across a busy international airport hub.';
-
+    // 2. Show the first Spatial Chat Node with the bunny loader while the AI writes the challenge
+    const challengeCard = {
+      id: Date.now(),
+      x: 100,
+      y: 100,
+      aiText: '',
+      isLoading: true,
+      time: getFormattedISTTime()
+    };
     if (window.AgileSpatialCards) {
       window.AgileSpatialCards.length = 0;
-      window.AgileSpatialCards.push({
-        id: Date.now(),
-        x: 100,
-        y: 100,
-        aiText: promptText,
-        time: realTime
-      });
+      window.AgileSpatialCards.push(challengeCard);
       window.renderAgileCanvas && window.renderAgileCanvas();
     }
 
-    if (window.AgileRecorderInstance && sessionState.answers.duration && sessionState.answers.duration !== 'No') {
-      window.AgileRecorderInstance.startRecording();
+    // 3. Ask the AI for a challenge based on the answers, then start the timer once it is visible
+    const sessionIdAtStart = sessionState.activeSessionId;
+    fetchChallengePrompt(sessionState.answers).then((challenge) => {
+      // Ignore a late response if the user already left or started another session
+      if (sessionState.activeSessionId !== sessionIdAtStart) return;
+
+      sessionState.challenge = challenge;
+      challengeCard.aiText = formatChallengeText(challenge);
+      challengeCard.isLoading = false;
+      challengeCard.time = getFormattedISTTime();
+      window.renderAgileCanvas && window.renderAgileCanvas();
+
+      // "Random" resolves to a real industry on the server; show which one was picked
+      const catEl = getEl('meta-industry-val');
+      if (catEl && challenge.category) catEl.textContent = challenge.category;
+
+      if (window.AgileRecorderInstance && sessionState.answers.duration && sessionState.answers.duration !== 'No') {
+        window.AgileRecorderInstance.startRecording();
+      }
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     AI CHALLENGE GENERATION (answers -> /api/agile/challenge -> prompt)
+     ═══════════════════════════════════════════════════════════════════════════ */
+  const OFFLINE_CHALLENGE = {
+    title: 'Flight disruptions',
+    prompt: 'Design a mobile and kiosk ecosystem for travelers navigating severe flight disruptions (multi-hour delays, cancellations, and gate changes) across a busy international airport hub.',
+    considerations: [],
+    source: 'offline'
+  };
+
+  async function fetchChallengePrompt(answers) {
+    const avoid = (sessionState.pastSessions || [])
+      .map(s => s && s.prompt)
+      .filter(Boolean)
+      .slice(0, 10);
+    try {
+      const res = await fetch('/api/agile/challenge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          difficulty: answers.difficulty,
+          category: answers.category,
+          duration: answers.duration,
+          avoid
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.challenge && data.challenge.prompt) return data.challenge;
+    } catch (e) {
+      console.log('Challenge generation fallback:', e);
     }
+    return { ...OFFLINE_CHALLENGE, category: answers.category, difficulty: answers.difficulty, duration: answers.duration };
+  }
+
+  function formatChallengeText(challenge) {
+    let text = challenge.prompt;
+    if (Array.isArray(challenge.considerations) && challenge.considerations.length) {
+      text += '\n\nThink about:\n' + challenge.considerations.map(c => `• ${c}`).join('\n');
+    }
+    return text;
   }
 
   /* ═══════════════════════════════════════════════════════════════════════════
@@ -1102,7 +1161,8 @@
       const activePayload = {
         id: sessionState.activeSessionId,
         title: currentTitle,
-        prompt: 'Design a mobile and kiosk ecosystem for travelers navigating severe flight disruptions across a busy international airport hub.',
+        prompt: (sessionState.challenge && sessionState.challenge.prompt) || OFFLINE_CHALLENGE.prompt,
+        challenge: sessionState.challenge || undefined,
         answers: sessionState.answers,
         difficulty: sessionState.answers.difficulty || 'Normal',
         category: sessionState.answers.category || 'Random',
@@ -1723,7 +1783,7 @@
           cardEl.className = 'agile-spatial-chat-node';
           const userHtml = card.userText ? `
             <div class="agile-chat-msg agile-chat-msg--user" style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end;">
-              <div class="agile-chat-bubble">${card.userText}</div>
+              <div class="agile-chat-bubble">${escapeAgileHtml(card.userText)}</div>
               <div class="agile-chat-timestamp">${card.time || getFormattedISTTime()}</div>
             </div>
           ` : '';
@@ -1737,7 +1797,7 @@
             </div>
           ` : ((card.aiText || card.text) ? `
             <div class="agile-chat-msg agile-chat-msg--ai" style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start;">
-              <div class="agile-chat-prompt-body">${card.aiText || card.text}</div>
+              <div class="agile-chat-prompt-body" style="white-space: pre-wrap;">${escapeAgileHtml(card.aiText || card.text)}</div>
               <div class="agile-chat-timestamp">${card.time || getFormattedISTTime()}</div>
             </div>
           ` : '');
@@ -1747,7 +1807,7 @@
           // Keep innerHTML updated dynamically when loading completes
           const userHtml = card.userText ? `
             <div class="agile-chat-msg agile-chat-msg--user" style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end;">
-              <div class="agile-chat-bubble">${card.userText}</div>
+              <div class="agile-chat-bubble">${escapeAgileHtml(card.userText)}</div>
               <div class="agile-chat-timestamp">${card.time || getFormattedISTTime()}</div>
             </div>
           ` : '';
@@ -1761,7 +1821,7 @@
             </div>
           ` : ((card.aiText || card.text) ? `
             <div class="agile-chat-msg agile-chat-msg--ai" style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start;">
-              <div class="agile-chat-prompt-body">${card.aiText || card.text}</div>
+              <div class="agile-chat-prompt-body" style="white-space: pre-wrap;">${escapeAgileHtml(card.aiText || card.text)}</div>
               <div class="agile-chat-timestamp">${card.time || getFormattedISTTime()}</div>
             </div>
           ` : '');
@@ -2805,7 +2865,12 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              conversationHistory: [{ role: 'user', content: text }],
+              conversationHistory: [
+                ...(sessionState.challenge && sessionState.challenge.prompt
+                  ? [{ role: 'assistant', content: `The designer is working on this whiteboard challenge: ${sessionState.challenge.prompt}` }]
+                  : []),
+                { role: 'user', content: text }
+              ],
               topic: sessionState.answers.category || 'design-systems'
             })
           });
