@@ -1781,51 +1781,13 @@
           cardEl = document.createElement('div');
           cardEl.id = `spatial-card-${card.id}`;
           cardEl.className = 'agile-spatial-chat-node';
-          const userHtml = card.userText ? `
-            <div class="agile-chat-msg agile-chat-msg--user" style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end;">
-              <div class="agile-chat-bubble">${escapeAgileHtml(card.userText)}</div>
-              <div class="agile-chat-timestamp">${card.time || getFormattedISTTime()}</div>
-            </div>
-          ` : '';
-          const aiHtml = card.isLoading ? `
-            <div class="agile-chat-msg agile-chat-msg--ai" style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start;">
-              <div class="agile-chat-ai-loading">
-                <div class="agile-bunny-loader agile-bunny-loader--chat">
-                  <img src="assets/hidden_Bunny_SVG.svg" class="agile-bunny-loader__img" alt="AI fetching..." />
-                </div>
-              </div>
-            </div>
-          ` : ((card.aiText || card.text) ? `
-            <div class="agile-chat-msg agile-chat-msg--ai" style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start;">
-              <div class="agile-chat-prompt-body" style="white-space: pre-wrap;">${escapeAgileHtml(card.aiText || card.text)}</div>
-              <div class="agile-chat-timestamp">${card.time || getFormattedISTTime()}</div>
-            </div>
-          ` : '');
-          cardEl.innerHTML = userHtml + aiHtml;
           overlayEl.appendChild(cardEl);
-        } else {
-          // Keep innerHTML updated dynamically when loading completes
-          const userHtml = card.userText ? `
-            <div class="agile-chat-msg agile-chat-msg--user" style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end;">
-              <div class="agile-chat-bubble">${escapeAgileHtml(card.userText)}</div>
-              <div class="agile-chat-timestamp">${card.time || getFormattedISTTime()}</div>
-            </div>
-          ` : '';
-          const aiHtml = card.isLoading ? `
-            <div class="agile-chat-msg agile-chat-msg--ai" style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start;">
-              <div class="agile-chat-ai-loading">
-                <div class="agile-bunny-loader agile-bunny-loader--chat">
-                  <img src="assets/hidden_Bunny_SVG.svg" class="agile-bunny-loader__img" alt="AI fetching..." />
-                </div>
-              </div>
-            </div>
-          ` : ((card.aiText || card.text) ? `
-            <div class="agile-chat-msg agile-chat-msg--ai" style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start;">
-              <div class="agile-chat-prompt-body" style="white-space: pre-wrap;">${escapeAgileHtml(card.aiText || card.text)}</div>
-              <div class="agile-chat-timestamp">${card.time || getFormattedISTTime()}</div>
-            </div>
-          ` : '');
-          cardEl.innerHTML = userHtml + aiHtml;
+        }
+        // Only touch the DOM when the card changed, so buttons inside stay clickable while text streams in
+        const html = buildSpatialCardHtml(card);
+        if (cardEl._renderedHtml !== html) {
+          cardEl.innerHTML = html;
+          cardEl._renderedHtml = html;
         }
 
         // Measure actual rendered height in DOM and sync to data model
@@ -2776,12 +2738,14 @@
     });
 
     /* ── 10. Spatial AI Prompt Submission at (X_anchor, Y_max + offset) ── */
-    function handlePromptSubmission() {
+    function handlePromptSubmission(options = {}) {
       if (!promptInput) return;
       const text = promptInput.value.trim();
       if (!text) return;
+      const fromVoice = !!(options && options.fromVoice);
 
       promptInput.value = '';
+      updateSendMicButton();
       const msgId = Date.now();
       const timeStr = getFormattedISTTime();
 
@@ -2825,8 +2789,12 @@
         userText: text,
         aiText: '',
         isLoading: true,
+        // Asked by voice: read the answer aloud by default. Typed: silent until the speaker is tapped.
+        speak: fromVoice && voice.ttsSupported,
         time: timeStr
       };
+      // Only one answer reads aloud at a time
+      if (newCard.speak) stopAllSpeech();
 
       engineState.chatCards.push(newCard);
       renderCanvas(); // Synchronously render new card in DOM with loading bunny
@@ -2855,22 +2823,24 @@
         animateCanvasTranslationTo(targetTx, targetTy, 450);
       }
 
-      // 3. Fetch AI Response from API & Instantly Replace 36px Bunny Loader with Response
+      // 3. Stream the AI answer into the card word by word (and read it aloud if the speaker is on)
       (async () => {
-        let aiResultText = 'Here is an AI response generated for your query! You can ask unlimited questions and scroll vertically anytime. Toggle to Scribble mode to annotate on the shared 2D canvas space.';
-        const fetchStartTime = Date.now();
+        const history = [];
+        engineState.chatCards.forEach(c => {
+          if (c === newCard || !c.userText || c.isLoading) return;
+          history.push({ role: 'user', content: c.userText });
+          if (c.aiText) history.push({ role: 'assistant', content: c.aiText });
+        });
+
+        let renderQueued = false;
+        const queueRender = () => {
+          if (renderQueued) return;
+          renderQueued = true;
+          requestAnimationFrame(() => { renderQueued = false; renderCanvas(); });
+        };
 
         try {
-          // Earlier questions and answers on this canvas, so follow-ups like "and for the kiosk?" make sense.
-          // Skips the first card (the challenge itself) and the card being answered now.
-          const history = [];
-          engineState.chatCards.forEach(c => {
-            if (c === newCard || !c.userText || c.isLoading) return;
-            history.push({ role: 'user', content: c.userText });
-            if (c.aiText) history.push({ role: 'assistant', content: c.aiText });
-          });
-
-          const res = await fetch('/api/agile/ask', {
+          const res = await fetch('/api/agile/ask/stream', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -2879,36 +2849,340 @@
               history
             })
           });
-          if (res.ok) {
-            const data = await res.json();
-            if (data.success && data.answer) aiResultText = data.answer;
-          } else {
-            aiResultText = 'Rabbit could not answer right now. Keep going and try again in a moment.';
+          if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          for (;;) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            if (!chunk) continue;
+            if (newCard.isLoading) {
+              newCard.isLoading = false;
+              newCard.isStreaming = true;
+              // Trim leading whitespace the model sometimes starts with
+              newCard.aiText = chunk.replace(/^\s+/, '');
+            } else {
+              newCard.aiText += chunk;
+            }
+            speakNewSentences(newCard, false);
+            queueRender();
           }
+          if (!newCard.aiText.trim()) throw new Error('Empty answer');
         } catch (e) {
-          console.log('AI Chat Fetching fallback:', e);
+          console.log('AI answer failed:', e);
+          if (!newCard.aiText || !newCard.aiText.trim()) {
+            newCard.aiText = 'Rabbit could not answer right now. Keep going and try again in a moment.';
+          }
         }
 
-        // Ensure loader is visible for at least 800ms so peekaboo animation plays smoothly before instant disappearance
-        const elapsed = Date.now() - fetchStartTime;
-        if (elapsed < 800) {
-          await new Promise(r => setTimeout(r, 800 - elapsed));
-        }
+        newCard.aiText = newCard.aiText.trim();
+        newCard.isLoading = false;
+        newCard.isStreaming = false;
+        speakNewSentences(newCard, true);
+        renderCanvas();
 
-        // INSTANT DISAPPEARANCE of 36px SVG Bunny Loader -> Render AI Text Message
         const aiMsgContainer = getEl(`agile-ai-msg-${msgId}`);
         if (aiMsgContainer) {
           aiMsgContainer.innerHTML = `
-            <div class="agile-chat-prompt-body" style="white-space: pre-wrap;">${escapeAgileHtml(aiResultText)}</div>
+            <div class="agile-chat-prompt-body" style="white-space: pre-wrap;">${escapeAgileHtml(newCard.aiText)}</div>
             <div class="agile-chat-timestamp">${getFormattedISTTime()}</div>
           `;
           if (feed) feed.scrollTop = feed.scrollHeight;
         }
-
-        newCard.aiText = aiResultText;
-        newCard.isLoading = false;
-        renderCanvas();
       })();
+    }
+
+
+    function buildSpatialCardHtml(card) {
+      const userHtml = card.userText ? `
+            <div class="agile-chat-msg agile-chat-msg--user" style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end;">
+              <div class="agile-chat-bubble">${escapeAgileHtml(card.userText)}</div>
+              <div class="agile-chat-timestamp">${card.time || getFormattedISTTime()}</div>
+            </div>
+          ` : '';
+
+      if (card.isLoading) {
+        return userHtml + `
+            <div class="agile-chat-msg agile-chat-msg--ai" style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start;">
+              <div class="agile-chat-ai-loading">
+                <div class="agile-bunny-loader agile-bunny-loader--chat">
+                  <img src="assets/hidden_Bunny_SVG.svg" class="agile-bunny-loader__img" alt="AI fetching..." />
+                </div>
+              </div>
+            </div>
+          `;
+      }
+
+      const aiText = card.aiText || card.text;
+      if (!aiText) return userHtml;
+
+      // Read-aloud toggle above answers to questions asked on the canvas
+      const speakBtn = (card.userText && voice.ttsSupported) ? `
+              <button class="agile-speak-toggle ${card.speak ? 'is-on' : ''}" data-speak-card="${card.id}"
+                title="${card.speak ? 'Stop reading aloud' : 'Read aloud'}" aria-pressed="${card.speak ? 'true' : 'false'}">
+                <span class="material-symbols-rounded">${card.speak ? 'volume_up' : 'volume_off'}</span>
+              </button>` : '';
+
+      return userHtml + `
+            <div class="agile-chat-msg agile-chat-msg--ai" style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start;">
+              ${speakBtn}
+              <div class="agile-chat-prompt-body${card.isStreaming ? ' is-streaming' : ''}" style="white-space: pre-wrap;">${escapeAgileHtml(aiText)}</div>
+              <div class="agile-chat-timestamp">${card.time || getFormattedISTTime()}</div>
+            </div>
+          `;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       VOICE: speech-to-text input (Chrome Web Speech API) and read-aloud
+       (speechSynthesis). Both run in the browser and use no AI tokens.
+       ═══════════════════════════════════════════════════════════════════════ */
+    const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const voice = {
+      sttSupported: !!SpeechRecognitionCtor,
+      ttsSupported: 'speechSynthesis' in window,
+      listening: false,
+      recognition: null,
+      finalText: '',
+      interimText: '',
+      stream: null,
+      audioCtx: null,
+      waveRaf: null,
+      speakingCardId: null
+    };
+
+    function updateSendMicButton() {
+      if (!sendBtn) return;
+      const icon = sendBtn.querySelector('.material-symbols-rounded');
+      const hasText = promptInput && promptInput.value.trim().length > 0;
+      let mode = 'send';
+      if (voice.listening) mode = 'stop';
+      else if (!hasText && voice.sttSupported) mode = 'mic';
+
+      sendBtn.dataset.mode = mode;
+      sendBtn.classList.toggle('is-mic', mode === 'mic');
+      sendBtn.classList.toggle('is-listening', mode === 'stop');
+      if (icon) icon.textContent = mode === 'stop' ? 'stop' : (mode === 'mic' ? 'mic' : 'send');
+      const label = mode === 'stop' ? 'Stop and send' : (mode === 'mic' ? 'Speak your question' : 'Send prompt');
+      sendBtn.title = label;
+      sendBtn.setAttribute('aria-label', label);
+    }
+
+    function ensureWaveCanvas() {
+      let wave = document.getElementById('agile-voice-wave');
+      if (!wave && promptInput) {
+        wave = document.createElement('canvas');
+        wave.id = 'agile-voice-wave';
+        wave.className = 'agile-voice-wave';
+        promptInput.insertAdjacentElement('afterend', wave);
+      }
+      return wave;
+    }
+
+    function drawWaveform(analyser, wave) {
+      const ctx2 = wave.getContext('2d');
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const dpr = window.devicePixelRatio || 1;
+
+      const draw = () => {
+        if (!voice.listening) return;
+        const w = wave.clientWidth, h = wave.clientHeight;
+        if (wave.width !== w * dpr) { wave.width = w * dpr; wave.height = h * dpr; }
+        analyser.getByteTimeDomainData(data);
+        ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx2.clearRect(0, 0, w, h);
+
+        // Simple bar waveform: 2px bars, 2px gap, height from loudness
+        const bars = Math.floor(w / 4);
+        const step = Math.max(1, Math.floor(data.length / bars));
+        ctx2.fillStyle = '#111111';
+        for (let i = 0; i < bars; i++) {
+          let peak = 0;
+          for (let j = 0; j < step; j++) {
+            const v = Math.abs(data[i * step + j] - 128) / 128;
+            if (v > peak) peak = v;
+          }
+          const barH = Math.max(2, Math.min(h, peak * h * 2.2));
+          ctx2.fillRect(i * 4, (h - barH) / 2, 2, barH);
+        }
+        voice.waveRaf = requestAnimationFrame(draw);
+      };
+      draw();
+    }
+
+    async function startListening() {
+      if (!voice.sttSupported || voice.listening) return;
+      stopAllSpeech();
+
+      const recognition = new SpeechRecognitionCtor();
+      recognition.lang = navigator.language || 'en-US';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      voice.finalText = '';
+      voice.interimText = '';
+
+      recognition.onresult = (event) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const r = event.results[i];
+          if (r.isFinal) voice.finalText += r[0].transcript + ' ';
+          else interim += r[0].transcript;
+        }
+        voice.interimText = interim;
+      };
+      recognition.onerror = (event) => {
+        console.warn('Speech recognition error:', event.error);
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          stopListening(false);
+          if (promptInput) promptInput.placeholder = 'Microphone blocked. Allow it in Chrome to speak.';
+        }
+      };
+      // Chrome ends recognition after a long pause; restart while the user is still in voice mode
+      recognition.onend = () => {
+        if (voice.listening && voice.recognition === recognition) {
+          try { recognition.start(); } catch (e) {}
+        }
+      };
+
+      voice.recognition = recognition;
+      voice.listening = true;
+      barEl && barEl.classList.add('is-voice-listening');
+      updateSendMicButton();
+
+      try {
+        recognition.start();
+      } catch (e) {
+        console.warn('Could not start speech recognition:', e);
+      }
+
+      // Waveform from the microphone level (purely visual)
+      const wave = ensureWaveCanvas();
+      try {
+        voice.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (!voice.listening) { voice.stream.getTracks().forEach(t => t.stop()); return; }
+        voice.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = voice.audioCtx.createMediaStreamSource(voice.stream);
+        const analyser = voice.audioCtx.createAnalyser();
+        analyser.fftSize = 1024;
+        source.connect(analyser);
+        if (wave) drawWaveform(analyser, wave);
+      } catch (e) {
+        console.warn('Waveform unavailable:', e);
+      }
+    }
+
+    function stopListening(sendAfter) {
+      if (!voice.listening) return;
+      voice.listening = false;
+      const recognition = voice.recognition;
+
+      const finish = () => {
+        if (voice.recognition !== recognition) return;
+        voice.recognition = null;
+        if (voice.waveRaf) cancelAnimationFrame(voice.waveRaf);
+        if (voice.stream) voice.stream.getTracks().forEach(t => t.stop());
+        if (voice.audioCtx) voice.audioCtx.close().catch(() => {});
+        voice.stream = null;
+        voice.audioCtx = null;
+        barEl && barEl.classList.remove('is-voice-listening');
+
+        const transcript = (voice.finalText + ' ' + voice.interimText).replace(/\s+/g, ' ').trim();
+        if (promptInput) promptInput.value = transcript;
+        updateSendMicButton();
+
+        if (!sendAfter) return;
+        if (!transcript) {
+          if (promptInput) {
+            const original = 'Have any question? Ask AI';
+            promptInput.placeholder = "Didn't catch that. Tap the mic and try again.";
+            setTimeout(() => { promptInput.placeholder = original; }, 2500);
+          }
+          return;
+        }
+        // Let the user see their words for a moment, then send
+        setTimeout(() => handlePromptSubmission({ fromVoice: true }), 350);
+      };
+
+      if (recognition) {
+        // Wait for the last results to arrive before reading the transcript
+        recognition.onend = finish;
+        try { recognition.stop(); } catch (e) { finish(); }
+        setTimeout(finish, 1200);
+      } else {
+        finish();
+      }
+    }
+
+    function onSendMicClick() {
+      const mode = sendBtn ? sendBtn.dataset.mode : 'send';
+      if (mode === 'stop') stopListening(true);
+      else if (mode === 'mic') startListening();
+      else handlePromptSubmission();
+    }
+
+    /* ── Read-aloud: speaks finished sentences while the answer is still streaming ── */
+    function textForSpeech(text) {
+      return text.replace(/^\s*[-•*]\s+/gm, '').replace(/[`#*_]/g, '');
+    }
+
+    function speakNewSentences(card, isDone) {
+      if (!voice.ttsSupported || !card.speak) return;
+      const text = card.aiText || '';
+      card.spokenIdx = card.spokenIdx || 0;
+      const unspoken = text.slice(card.spokenIdx);
+
+      // Speak up to the last sentence end (or line break); the rest waits for more text
+      let cut = -1;
+      const re = /[.!?](\s|$)|\n/g;
+      let m;
+      while ((m = re.exec(unspoken)) !== null) cut = m.index + m[0].length;
+      if (isDone) cut = unspoken.length;
+      if (cut <= 0) return;
+
+      const chunk = textForSpeech(unspoken.slice(0, cut)).trim();
+      card.spokenIdx += cut;
+      if (!chunk) return;
+
+      const utter = new SpeechSynthesisUtterance(chunk);
+      utter.lang = navigator.language || 'en-US';
+      utter.rate = 1.05;
+      window.speechSynthesis.speak(utter);
+      voice.speakingCardId = card.id;
+    }
+
+    function stopAllSpeech() {
+      if (voice.ttsSupported) window.speechSynthesis.cancel();
+      engineState.chatCards.forEach(c => { if (c.speak) c.speak = false; });
+      voice.speakingCardId = null;
+    }
+
+    function toggleCardSpeech(cardId) {
+      const card = engineState.chatCards.find(c => String(c.id) === String(cardId));
+      if (!card) return;
+      if (card.speak) {
+        stopAllSpeech();
+      } else {
+        stopAllSpeech();
+        card.speak = true;
+        // Read from the start of this answer; if it is still streaming, speech keeps up as text arrives
+        card.spokenIdx = 0;
+        speakNewSentences(card, !card.isStreaming);
+      }
+      renderCanvas();
+    }
+
+    if (overlayEl) {
+      overlayEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-speak-card]');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        toggleCardSpeech(btn.getAttribute('data-speak-card'));
+      });
+      overlayEl.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('[data-speak-card]')) e.stopPropagation();
+      });
     }
 
     /* ── Turn the structured /api/chat response into readable plain text ──
@@ -2978,7 +3252,11 @@
     }
 
     if (sendBtn) {
-      sendBtn.addEventListener('click', handlePromptSubmission);
+      sendBtn.addEventListener('click', onSendMicClick);
+      updateSendMicButton();
+    }
+    if (promptInput) {
+      promptInput.addEventListener('input', updateSendMicButton);
     }
 
     if (promptInput) {

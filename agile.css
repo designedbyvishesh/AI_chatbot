@@ -2020,6 +2020,7 @@
   font-weight: 500;
   color: rgba(255, 255, 255, 0.7);
   letter-spacing: 0.2px;
+}
 
 /* ── Canvas Auto-Expanding Text Node Input ── */
 .agile-text-node-input {
@@ -2046,3 +2047,78 @@
   overflow-wrap: break-word;
 }
 
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VOICE INPUT (mic button + live waveform) & READ-ALOUD TOGGLE
+   ═══════════════════════════════════════════════════════════════════════════ */
+.agile-prompt-send-btn.is-listening {
+  background-color: #111111;
+  color: #ffffff;
+  animation: agileMicPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes agileMicPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(86, 211, 100, 0.55); }
+  50% { box-shadow: 0 0 0 6px rgba(86, 211, 100, 0); }
+}
+
+.agile-voice-wave {
+  display: none;
+  flex: 1;
+  height: 28px;
+  min-width: 0;
+  margin: 0 8px;
+}
+
+.agile-hybrid-bar.is-voice-listening .agile-prompt-input {
+  display: none;
+}
+
+.agile-hybrid-bar.is-voice-listening .agile-voice-wave {
+  display: block;
+}
+
+.agile-speak-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  background: #ffffff;
+  color: #777777;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.agile-speak-toggle:hover {
+  color: #111111;
+  border-color: rgba(17, 17, 17, 0.3);
+}
+
+.agile-speak-toggle.is-on {
+  background: #56D364;
+  border-color: #56D364;
+  color: #000000;
+}
+
+.agile-speak-toggle .material-symbols-rounded {
+  font-size: 18px;
+}
+
+.agile-chat-prompt-body.is-streaming::after {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: #111111;
+  animation: agileCaretBlink 0.9s steps(1) infinite;
+}
+
+@keyframes agileCaretBlink {
+  50% { opacity: 0; }
+}

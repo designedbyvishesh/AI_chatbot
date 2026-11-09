@@ -89,6 +89,65 @@ async function callGroq(messages, { maxTokens = MAX_TOKENS, temperature = 0.7 } 
 }
 
 /**
+ * Streaming Groq call. Calls onDelta(textChunk) as tokens arrive and
+ * resolves with the full text when the stream ends.
+ */
+async function callGroqStream(messages, onDelta, { maxTokens = MAX_TOKENS, temperature = 0.7, signal } = {}) {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error('GROQ_API_KEY is not set in environment variables. Add it to your .env file.');
+  }
+
+  const response = await fetch(GROQ_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      messages,
+      max_tokens: maxTokens,
+      temperature,
+      top_p: 0.9,
+      stream: true
+    }),
+    signal
+  });
+
+  if (!response.ok || !response.body) {
+    const errorBody = await response.text();
+    throw new Error(`Groq API error (${response.status}): ${errorBody}`);
+  }
+
+  // Groq streams Server-Sent Events: lines of "data: {json}" ending with "data: [DONE]"
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let full = '';
+  for await (const chunk of response.body) {
+    buffer += decoder.decode(chunk, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('data:')) continue;
+      const payload = trimmed.slice(5).trim();
+      if (payload === '[DONE]') return full;
+      try {
+        const delta = JSON.parse(payload).choices?.[0]?.delta?.content;
+        if (delta) {
+          full += delta;
+          onDelta(delta);
+        }
+      } catch (e) {
+        // ignore keep-alive or partial lines
+      }
+    }
+  }
+  return full;
+}
+
+/**
  * Parse the LLM's response, attempting to extract structured JSON.
  * Falls back to a text response if JSON parsing fails.
  */
@@ -153,4 +212,4 @@ function parseStructuredResponse(rawContent) {
   };
 }
 
-module.exports = { chat, callGroq };
+module.exports = { chat, callGroq, callGroqStream };
