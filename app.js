@@ -1039,7 +1039,7 @@ async function callServerChat(prompt, chatThread, callback) {
 
   } catch (err) {
     console.warn('[Chat] Groq API fallback to UX Master Engine:', err);
-    const lower = userPrompt.toLowerCase();
+    const lower = prompt.toLowerCase();
     if (lower.includes('hierarchy') || lower.includes('level') || lower.includes('flow')) {
       renderHierarchyChallengeWidget(chatThread);
     } else if (lower.includes('modal') || lower.includes('drawer')) {

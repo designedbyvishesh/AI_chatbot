@@ -2812,9 +2812,8 @@
           if (res.ok) {
             const data = await res.json();
             if (data.success && data.response) {
-              if (typeof data.response === 'string') aiResultText = data.response;
-              else if (data.response.text) aiResultText = data.response.text;
-              else if (data.response.question) aiResultText = data.response.question;
+              const readable = aiResponseToPlainText(data.response);
+              if (readable) aiResultText = readable;
             }
           }
         } catch (e) {
@@ -2831,7 +2830,7 @@
         const aiMsgContainer = getEl(`agile-ai-msg-${msgId}`);
         if (aiMsgContainer) {
           aiMsgContainer.innerHTML = `
-            <div class="agile-chat-prompt-body">${aiResultText}</div>
+            <div class="agile-chat-prompt-body" style="white-space: pre-wrap;">${escapeAgileHtml(aiResultText)}</div>
             <div class="agile-chat-timestamp">${getFormattedISTTime()}</div>
           `;
           if (feed) feed.scrollTop = feed.scrollHeight;
@@ -2841,6 +2840,41 @@
         newCard.isLoading = false;
         renderCanvas();
       })();
+    }
+
+    /* ── Turn the structured /api/chat response into readable plain text ──
+       The server returns { type: 'text', content } for answers,
+       { type: 'question', question, options, hint } for quizzes and
+       { type: 'evaluation', feedback, deepDive } for answer feedback. */
+    function aiResponseToPlainText(response) {
+      if (!response) return '';
+      if (typeof response === 'string') return response;
+
+      const stripMarkdown = (md) => String(md || '')
+        .replace(/\\n/g, '\n')
+        .replace(/^#{1,6}\s+/gm, '')
+        .replace(/\*\*(.+?)\*\*/g, '$1')
+        .replace(/`([^`]+)`/g, '$1')
+        .replace(/^[\-\*] /gm, '• ')
+        .trim();
+
+      if (response.type === 'question' && response.question) {
+        const options = Array.isArray(response.options)
+          ? response.options.map(o => `${o.id}. ${o.text}`).join('\n')
+          : '';
+        return [response.question, options, response.hint ? `Hint: ${response.hint}` : '']
+          .filter(Boolean).join('\n\n');
+      }
+      if (response.type === 'evaluation') {
+        return [response.feedback, response.deepDive].filter(Boolean).join('\n\n');
+      }
+      return stripMarkdown(response.content || response.text || response.question || '');
+    }
+
+    function escapeAgileHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
     /* ── Smooth Canvas Viewport Translation Animation (Ease-Out Cubic) ── */
