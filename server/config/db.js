@@ -1,10 +1,10 @@
 const dns = require('dns');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
-// Set public DNS fallback for Windows SRV resolution
-try {
-  dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch (e) {}
+// Public DNS servers, used only if the system DNS cannot resolve the Atlas
+// SRV record (some Windows/router setups). Forcing them up front breaks
+// networks that block outside DNS, so we try the system resolver first.
+const FALLBACK_DNS = ['8.8.8.8', '1.1.1.1'];
 
 const uri = process.env.MONGODB_URI;
 if (!uri) {
@@ -25,10 +25,22 @@ const client = uri
 
 let db = null;
 
+function isSrvLookupError(err) {
+  return /querySrv|ENOTFOUND|ESERVFAIL|ETIMEOUT|ECONNREFUSED/i.test(err && err.message || '')
+    && /_mongodb\._tcp|querySrv/i.test(err && err.message || '');
+}
+
 async function connectDB() {
   if (!client) return null;
   try {
-    await client.connect();
+    try {
+      await client.connect();
+    } catch (err) {
+      if (!isSrvLookupError(err)) throw err;
+      console.warn('System DNS could not resolve the MongoDB SRV record, retrying with public DNS...');
+      dns.setServers(FALLBACK_DNS);
+      await client.connect();
+    }
     db = client.db("design_system_ai");
     console.log("✅ Successfully connected to MongoDB Atlas (Cluster0: design_system_ai)");
     return db;
