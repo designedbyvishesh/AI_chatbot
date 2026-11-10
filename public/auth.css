@@ -237,69 +237,124 @@
   -webkit-font-smoothing: antialiased;
 }
 
+/* ── Theme tokens for the sign-in card. Dark is live; light is ready for later
+      (html[data-theme="light"], set from localStorage "rabbit_theme"). ── */
+.rabbit-auth {
+  --auth-modal-bg: #0F0F0F;
+  --auth-scrim: rgba(8, 12, 20, 0.28);
+  --auth-bg-filter: blur(22px) saturate(1.1);
+  --auth-shadow: 0 40px 120px rgba(0, 0, 0, 0.45);
+  --auth-eyebrow: #B3B3B3;
+  --auth-back-text: #B3B3B3;
+}
+html[data-theme="light"] .rabbit-auth {
+  --auth-modal-bg: #F7F6F2;
+  --auth-scrim: rgba(255, 255, 255, 0.2);
+  --auth-bg-filter: blur(16px) brightness(1.08) saturate(0.95);
+  --auth-shadow: 0 30px 90px rgba(30, 60, 110, 0.28);
+  --auth-eyebrow: #4D4D4D;
+}
+
 .rabbit-auth {
   position: relative;
-  display: flex;
   min-height: 100vh;
-  animation: agileViewTransition 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-.rabbit-auth .agile-wallpaper-bg { position: fixed; }
-
-.rabbit-auth__brand {
-  position: relative;
-  z-index: 10;
-  width: 420px;
-  flex-shrink: 0;
-  padding: 28px 32px 32px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-}
-.rabbit-auth__logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
-.rabbit-auth__logo img { width: 32px; height: 32px; }
-
-.rabbit-auth__pitch { margin-top: auto; margin-bottom: auto; padding: 40px 0; }
-.rabbit-auth__headline {
-  font-family: var(--agile-font-serif);
-  font-weight: 400;
-  font-size: 40px;
-  line-height: 1.12;
-  letter-spacing: -0.5px;
-  margin: 0 0 28px;
-}
-.rabbit-auth__benefits { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 16px; }
-.rabbit-auth__benefits li { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; color: var(--agile-text-secondary); line-height: 1.45; }
-.rabbit-auth__benefits .material-symbols-outlined {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--rabbit-green-tint);
-  color: var(--agile-primary-green);
-  font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 32px 24px;
+  box-sizing: border-box;
+  overflow: hidden;
+  animation: agileViewTransition 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-.rabbit-auth__foot { font-size: 12px; color: var(--agile-text-muted); }
+.rabbit-auth__bg {
+  position: fixed;
+  inset: -40px;
+  background: #0A0A0A url('assets/art/door-and-rabbit.jpg') center 35% / cover no-repeat;
+  filter: var(--auth-bg-filter);
+  transform: scale(1.04);
+}
+.rabbit-auth__scrim { position: fixed; inset: 0; background: var(--auth-scrim); }
+
+/* The pop-up card: picture on the left, form on the right */
+.rabbit-auth__modal {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  width: 100%;
+  max-width: 1040px;
+  min-height: 640px;
+  box-sizing: border-box;
+  padding: 12px;
+  border-radius: 24px;
+  background: var(--auth-modal-bg);
+  box-shadow: var(--auth-shadow);
+  /* The form components read these; light mode only changes them here */
+  --rabbit-card: #191919;
+  --agile-border-strong: rgba(255, 255, 255, 0.14);
+  --auth-primary-bg: var(--agile-primary-green);
+  --auth-primary-text: #0F0F0F;
+}
+html[data-theme="light"] .rabbit-auth__modal {
+  --agile-text-primary: #141414;
+  --agile-text-secondary: #2B2B2B;
+  --agile-text-muted: #6B6B6B;
+  --agile-text-dark: #FFFFFF;
+  --agile-primary-green: #1F7A2C;
+  --agile-green-glow: rgba(31, 122, 44, 0.25);
+  --agile-card-hover: #E2E0D8;
+  --rabbit-card: #ECEBE5;
+  --agile-border-strong: #D6D3CA;
+  --rabbit-green-tint: rgba(31, 122, 44, 0.1);
+  --auth-primary-bg: #141414;
+  --auth-primary-text: #FFFFFF;
+}
+.rabbit-auth__modal .rabbit-btn--primary { background-color: var(--auth-primary-bg); color: var(--auth-primary-text); }
+html[data-theme="light"] .rabbit-auth__modal .rabbit-btn--primary { box-shadow: none; }
+html[data-theme="light"] .rabbit-auth__modal .rabbit-btn--secondary { background-color: #FFFFFF; }
+html[data-theme="light"] .rabbit-auth__modal .rabbit-input::placeholder { color: #6B6B6B; }
+html[data-theme="light"] .rabbit-auth__modal .rabbit-pill[aria-pressed="true"] { background-color: #141414; border-color: #141414; color: #FFFFFF; box-shadow: none; }
+html[data-theme="light"] .rabbit-auth__modal .rabbit-alert--error { color: #B03A3A; }
+html[data-theme="light"] .rabbit-auth__modal .rabbit-alert--success { color: #1A5E24; background: #E3F3E5; }
+
+.rabbit-auth__art {
+  position: relative;
+  flex: 0 0 46%;
+  border-radius: 16px;
+  background: #1a3a6a url('assets/art/door-and-rabbit.jpg') center / cover no-repeat;
+  overflow: hidden;
+}
+.rabbit-auth__art-quote {
+  position: absolute;
+  left: 28px;
+  top: 28px;
+  margin: 0;
+  max-width: 240px;
+  font-family: var(--agile-font-serif);
+  font-size: 22px;
+  line-height: 1.25;
+  color: #FFFFFF;
+  text-shadow: 0 2px 14px rgba(10, 30, 70, 0.55);
+}
 
 .rabbit-auth__frame {
   position: relative;
-  z-index: 10;
   flex: 1;
-  margin: 12px 12px 12px 0;
-  border-radius: var(--agile-radius-frame);
-  background-color: var(--agile-frame-bg);
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 48px 32px;
+  padding: 36px 56px;
   box-sizing: border-box;
-  min-height: calc(100vh - 24px);
 }
 
-.rabbit-auth__card { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 20px; }
-.rabbit-auth__card--wide { max-width: 480px; }
+.rabbit-auth__head { display: flex; flex-direction: column; gap: 6px; }
+.rabbit-auth__eyebrow { margin: 0; font-size: 18px; color: var(--auth-eyebrow); }
+.rabbit-auth__head .rabbit-auth__title { font-size: 46px; line-height: 1.08; letter-spacing: -0.5px; }
+.rabbit-auth__head .rabbit-auth__title--sm { font-size: 38px; }
+.rabbit-auth__head .rabbit-auth__sub { margin: 10px 0 0; font-size: 15px; }
+
+.rabbit-auth__card { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 20px; }
+.rabbit-auth__card--wide { max-width: 440px; }
 .rabbit-auth__card[hidden] { display: none; }
 
 .rabbit-auth__bunny { width: 84px; height: 84px; align-self: flex-start; margin-bottom: -8px; }
@@ -309,46 +364,9 @@
   font-size: 32px;
   letter-spacing: -0.4px;
   margin: 0;
+  color: var(--agile-text-primary);
 }
 .rabbit-auth__sub { margin: -12px 0 0; font-size: 15px; color: var(--agile-text-muted); line-height: 1.5; }
-
-/* Sign in / Create account switch, same look as the Quiz / Agile switcher */
-.rabbit-segment {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  background: var(--rabbit-card);
-  border-radius: var(--agile-radius-pill);
-  padding: 3px;
-  height: 42px;
-  box-sizing: border-box;
-}
-.rabbit-segment__slider {
-  position: absolute;
-  top: 3px;
-  bottom: 3px;
-  left: 3px;
-  width: calc(50% - 3px);
-  background: var(--agile-primary-green);
-  border-radius: var(--agile-radius-pill);
-  box-shadow: 0 2px 8px var(--agile-green-glow);
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.rabbit-segment[data-active="signup"] .rabbit-segment__slider { transform: translateX(100%); }
-.rabbit-segment button {
-  position: relative;
-  z-index: 1;
-  border: none;
-  background: transparent;
-  border-radius: var(--agile-radius-pill);
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.6);
-  cursor: pointer;
-  transition: color 0.3s ease;
-}
-.rabbit-segment button[aria-selected="true"] { color: var(--agile-text-dark); font-weight: 600; }
 
 .rabbit-divider {
   display: flex;
@@ -356,8 +374,6 @@
   gap: 12px;
   color: var(--agile-text-muted);
   font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 .rabbit-divider::before,
 .rabbit-divider::after { content: ''; flex: 1; height: 1px; background: var(--agile-border-strong); }
@@ -394,14 +410,14 @@
 }
 @keyframes rabbitSpin { to { transform: rotate(360deg); } }
 
-@media (max-width: 900px) {
-  .rabbit-auth { flex-direction: column; }
-  .rabbit-auth__brand { width: 100%; padding: 20px 20px 8px; }
-  .rabbit-auth__pitch { padding: 24px 0 8px; }
-  .rabbit-auth__headline { font-size: 30px; margin-bottom: 16px; }
-  .rabbit-auth__benefits li:nth-child(n+2) { display: none; }
-  .rabbit-auth__foot { display: none; }
-  .rabbit-auth__frame { margin: 8px; min-height: 0; padding: 32px 20px; align-items: flex-start; }
+@media (max-width: 860px) {
+  .rabbit-auth { padding: 12px; align-items: flex-start; }
+  .rabbit-auth__modal { flex-direction: column; min-height: 0; border-radius: 20px; }
+  .rabbit-auth__art { flex: 0 0 150px; }
+  .rabbit-auth__art-quote { font-size: 17px; left: 18px; top: 16px; max-width: 220px; }
+  .rabbit-auth__frame { padding: 28px 16px 24px; align-items: flex-start; }
+  .rabbit-auth__head .rabbit-auth__title { font-size: 36px; }
+  .rabbit-auth__head .rabbit-auth__title--sm { font-size: 32px; }
 }
 
 /* ═══════ AVATAR + MENU (top bar) ═══════ */

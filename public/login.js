@@ -25,11 +25,8 @@ function show(view) {
 function setMode(next) {
   mode = next;
   const isSignup = mode === 'signup';
-  $('auth-segment').dataset.active = mode;
-  $('auth-segment').querySelectorAll('button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.mode === mode)));
   document.querySelectorAll('[data-only]').forEach((el) => { el.hidden = el.dataset.only !== mode; });
-  $('auth-title').textContent = isSignup ? 'Create your account' : 'Welcome back';
-  $('auth-sub').textContent = isSignup ? 'Free to start. Your sessions stay private to you.' : 'Sign in to pick up where you left off.';
+  $('auth-sub').textContent = isSignup ? 'Create your account on' : 'Sign in to';
   $('email-submit').textContent = isSignup ? 'Create account' : 'Sign in';
   $('password-input').autocomplete = isSignup ? 'new-password' : 'current-password';
   $('switch-line').innerHTML = isSignup
@@ -211,7 +208,6 @@ async function start() {
     return;
   }
 
-  $('auth-segment').addEventListener('click', (e) => { if (e.target.dataset.mode) setMode(e.target.dataset.mode); });
   $('switch-line').addEventListener('click', (e) => { if (e.target.dataset.switch) setMode(e.target.dataset.switch); });
   $('google-btn').addEventListener('click', onGoogle);
   $('email-form').addEventListener('submit', onEmailSubmit);
