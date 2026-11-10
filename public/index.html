@@ -15,65 +15,58 @@
   <link rel="stylesheet" href="tokens.css" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="agile.css" />
+  <link rel="stylesheet" href="recording-timer.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <script src="auth-boot.js"></script>
   <style>
     html, body { background: #000 !important; }
-    body { margin: 0; min-height: 100vh; overflow: hidden; }
+    body { margin: 0; }
 
-    .soon-topbar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      height: 44px;
-      padding: 0 20px;
-      z-index: 2;
-    }
-    .soon-topbar__logo { display: inline-flex; }
-    .soon-topbar__logo img { width: 32px; height: 32px; display: block; }
-
-    .soon {
-      position: fixed;
-      inset: 0;
+    /* Same frame as the Agile home: 12px gutter, 16px radius. The rabbit
+       sits on the top edge of the picture card. */
+    .soon-main {
+      flex: 1;
+      min-height: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 16px;
-      padding: 0 16px;
+      padding: 0 12px 12px;
+      box-sizing: border-box;
+      background: #000;
+    }
+    .soon-bunny {
+      width: 96px;
+      height: 80px;
+      overflow: hidden;
+      flex-shrink: 0;
+      margin-bottom: -1px;
+    }
+    .soon-bunny img { width: 96px; height: 96px; display: block; object-fit: contain; }
+    .soon-card {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #191919 url('assets/art/boat-in-the-clouds.jpg') center bottom / cover no-repeat;
+    }
+    .soon-card__title {
+      position: absolute;
+      top: 28px;
+      left: 0;
+      right: 0;
       text-align: center;
-    }
-    .soon__bunny {
-      width: 120px;
-      height: 120px;
-      object-fit: contain;
-      animation: soonFloat 3.2s ease-in-out infinite;
-    }
-    .soon__title {
+      margin: 0;
       font-family: 'DM Serif Text', Georgia, serif;
       font-size: 34px;
       font-weight: 400;
-      color: #fff;
-      margin: 0;
       letter-spacing: -0.3px;
+      color: #fff;
+      text-shadow: 0 2px 16px rgba(20, 50, 90, 0.35);
     }
-    .soon__text {
-      font-family: 'Inter', sans-serif;
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.55);
-      margin: 0;
-      max-width: 320px;
-      line-height: 1.5;
-    }
-    @keyframes soonFloat {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .soon__bunny { animation: none; }
-    }
+    @media (max-width: 700px) { .soon-card { background-position: 22% bottom; } }
+    @media (prefers-reduced-motion: reduce) { .soon-bunny img { animation: none; } }
   </style>
 </head>
 
@@ -85,34 +78,40 @@
     </div>
   </div>
 
-  <header class="soon-topbar">
-    <a class="soon-topbar__logo" href="agile.html" title="Rabbit">
-      <img src="assets/Logo_Black_BG.svg" alt="Rabbit" />
-    </a>
-    <div class="mode-switcher" id="mode-switcher" data-active-mode="quiz" title="Switch between Quiz & Agile modes">
-      <div class="mode-switcher__slider"></div>
-      <button class="mode-switcher__item mode-switcher__item--quiz" id="mode-opt-quiz" data-mode="quiz"
-        aria-label="Quiz mode">
-        <span class="mode-switcher__item-icon">
-          <span class="material-symbols-outlined">quiz</span>
-        </span>
-        <span class="mode-switcher__item-text">Quiz</span>
-      </button>
-      <button class="mode-switcher__item mode-switcher__item--agile" id="mode-opt-agile" data-mode="agile"
-        aria-label="Switch to Agile mode">
-        <span class="mode-switcher__item-icon">
-          <span class="material-symbols-outlined">bolt</span>
-        </span>
-        <span class="mode-switcher__item-text">Agile</span>
-      </button>
-    </div>
-  </header>
+  <div class="app-shell" id="app-shell">
+    <header class="topbar" id="topbar">
+      <div class="topbar__left">
+        <div class="topbar__logo" id="logo" title="I'm your bunny">
+          <img src="assets/Logo_Black_BG.svg" alt="Logo" class="topbar__logo-img topbar__logo-img--dark" width="32" height="32" />
+          <img src="assets/Logo_White_BG.svg" alt="Logo" class="topbar__logo-img topbar__logo-img--light" width="32" height="32" />
+        </div>
+        <div class="mode-switcher" id="mode-switcher" data-active-mode="quiz" title="Switch between Quiz & Agile modes">
+          <div class="mode-switcher__slider"></div>
+          <button class="mode-switcher__item mode-switcher__item--quiz" id="mode-opt-quiz" data-mode="quiz" aria-label="Quiz mode">
+            <span class="mode-switcher__item-icon"><span class="material-symbols-outlined">quiz</span></span>
+            <span class="mode-switcher__item-text">Quiz</span>
+          </button>
+          <button class="mode-switcher__item mode-switcher__item--agile" id="mode-opt-agile" data-mode="agile" aria-label="Switch to Agile mode">
+            <span class="mode-switcher__item-icon"><span class="material-symbols-outlined">bolt</span></span>
+            <span class="mode-switcher__item-text">Agile</span>
+          </button>
+        </div>
+      </div>
+      <div class="topbar__right">
+        <span class="topbar__time" id="current-time">07:00 AM</span>
+        <button class="topbar__icon-btn" id="more-btn" aria-label="More options" title="Page Options">
+          <span class="material-symbols-outlined">more_horiz</span>
+        </button>
+      </div>
+    </header>
 
-  <main class="soon">
-    <img src="assets/Bunny_Blink_animation.svg" alt="" class="soon__bunny" />
-    <h1 class="soon__title">Coming soon</h1>
-    <p class="soon__text">Quiz mode is still being built. Practice with Agile mode in the meantime.</p>
-  </main>
+    <main class="soon-main">
+      <div class="soon-bunny"><img src="assets/Bunny_Blink_animation.svg" alt="" /></div>
+      <section class="soon-card" role="img" aria-label="A small boat drifting on a sea of clouds at sunset">
+        <h1 class="soon-card__title">Coming soon</h1>
+      </section>
+    </main>
+  </div>
 
   <script>
     (function () {
@@ -122,6 +121,14 @@
         setTimeout(function () { loader.classList.add('is-hidden'); }, 900);
       });
 
+      var timeEl = document.getElementById('current-time');
+      function tick() {
+        var n = new Date(), h = n.getHours(), m = String(n.getMinutes()).padStart(2, '0');
+        var ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+        timeEl.textContent = String(h).padStart(2, '0') + ':' + m + ' ' + ap;
+      }
+      tick(); setInterval(tick, 30000);
+
       var switcher = document.getElementById('mode-switcher');
       document.getElementById('mode-opt-agile').addEventListener('click', function () {
         switcher.setAttribute('data-active-mode', 'agile');
@@ -130,6 +137,7 @@
       });
     })();
   </script>
+  <script type="module" src="auth-guard.js"></script>
 </body>
 
 </html>
